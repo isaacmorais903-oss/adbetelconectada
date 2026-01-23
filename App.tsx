@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
@@ -9,7 +10,7 @@ import { Locations } from './pages/Locations';
 import { Prayers } from './pages/Prayers';
 import { Login } from './pages/Login';
 import { View, UserRole } from './types';
-import { Bell, LogOut, Home, Moon, Sun } from 'lucide-react';
+import { Bell, LogOut, Home, Moon, Sun, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
   // Auth State
@@ -109,10 +110,19 @@ const App: React.FC = () => {
                  </div>
                  <div>
                     <h1 className="font-bold text-lg leading-tight">Olá, {userRole === 'admin' ? 'Pr. Jeziel' : 'Carlos'}</h1>
-                    <p className="text-xs text-slate-300">Bem-vindo à ADBetelConectada</p>
+                    <p className="text-xs text-slate-300 flex items-center gap-1">
+                        {userRole === 'admin' ? 'Painel Administrativo' : 'Área do Membro'}
+                    </p>
                  </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
+                 <button 
+                    onClick={toggleRole} 
+                    className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition flex items-center justify-center"
+                    title={userRole === 'admin' ? "Mudar para Membro" : "Mudar para Admin"}
+                 >
+                    <RefreshCw className="w-5 h-5 text-blue-300" />
+                 </button>
                  <button onClick={toggleTheme} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
                     {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                  </button>
