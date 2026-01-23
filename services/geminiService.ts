@@ -1,15 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const apiKey = process.env.API_KEY;
 
 export const generateAnnouncementContent = async (topic: string, tone: string): Promise<string> => {
+  // Verificação de segurança: Se não tiver chave, retorna texto falso sem tentar conectar
   if (!apiKey) {
     console.warn("API Key is missing. Returning mock data.");
-    return "Nota: Configure sua API Key para gerar textos reais. Este é um texto de exemplo gerado localmente.";
+    return "Nota: Configure sua API Key para gerar textos reais. Este é um texto de exemplo gerado localmente simulando a resposta da Inteligência Artificial.";
   }
 
   try {
+    // Inicializa a IA apenas quando for usar, evitando erros no carregamento da página
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `
       Você é um assistente de comunicação para uma igreja. 
       Escreva um aviso curto, acolhedor e claro para o boletim da igreja.
@@ -21,13 +24,13 @@ export const generateAnnouncementContent = async (topic: string, tone: string): 
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
 
     return response.text || "Não foi possível gerar o conteúdo.";
   } catch (error) {
     console.error("Error generating content:", error);
-    return "Erro ao conectar com a IA. Tente novamente mais tarde.";
+    return "Erro ao conectar com a IA. Verifique sua chave API ou tente novamente mais tarde.";
   }
 };
