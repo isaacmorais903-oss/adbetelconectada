@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, UserCircle, RefreshCw, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
 
@@ -27,7 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
       ]
     : [
         { id: 'dashboard', label: 'Meu Painel', icon: LayoutDashboard },
-        { id: 'members', label: 'Meus Dados', icon: UserCircle },
+        { id: 'members', label: 'Meus Dados', icon: CircleUser },
         { id: 'finance', label: 'Contribuição', icon: DollarSign },
         { id: 'announcements', label: 'Mural de Avisos', icon: Bell },
         { id: 'prayers', label: 'Pedidos de Oração', icon: HeartHandshake },
