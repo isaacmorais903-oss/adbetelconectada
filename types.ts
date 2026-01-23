@@ -1,0 +1,85 @@
+
+export type UserRole = 'admin' | 'member';
+
+export enum MemberStatus {
+  ACTIVE = 'Ativo',
+  INACTIVE = 'Inativo',
+  VISITOR = 'Visitante'
+}
+
+export interface Member {
+  id: string;
+  // 1. Informações Pessoais
+  name: string;
+  birthDate?: string;
+  // Idade é calculado no front
+  naturalness?: string; // Naturalidade
+  nationality?: string; // Nacionalidade
+  rg?: string;
+  cpf?: string;
+  maritalStatus?: string; // Estado Civil
+  profession?: string;
+  photoUrl?: string;
+
+  // 2. Contato e Endereço
+  email: string;
+  phone: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+
+  // 3. Informações Eclesiásticas
+  role: string; // Cargo/Função
+  status: MemberStatus;
+  congregation?: string;
+  ministry?: string; // Ministério (ex: Louvor, Infantil)
+  baptismDate?: string; // Batismo nas Águas
+  holySpiritBaptismDate?: string; // Batismo Espírito Santo
+  previousChurch?: string; // Igreja Anterior
+  joinedAt: string; // Data de Admissão
+}
+
+export enum AnnouncementType {
+  GENERAL = 'Geral',
+  URGENT = 'Urgente',
+  EVENT = 'Evento'
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  type: AnnouncementType;
+  date: string;
+}
+
+export interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  category: string;
+  date: string;
+  memberId?: string;
+}
+
+export interface Location {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  type: 'Sede' | 'Congregação';
+  serviceTimes: string;
+  mapUrl: string; // Google Maps Link
+}
+
+export interface PrayerRequest {
+  id: string;
+  requesterName: string;
+  request: string;
+  date: string;
+  status: 'Novo' | 'Em Oração' | 'Respondido';
+  isPrivate: boolean;
+}
+
+export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers';
