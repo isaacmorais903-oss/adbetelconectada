@@ -42,11 +42,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
         className="p-6 flex items-center space-x-3 border-b border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors"
       >
         {APP_CONFIG.logoUrl && !imgError ? (
-            <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+            <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg border border-white/10 overflow-hidden p-1">
                 <img 
                     src={APP_CONFIG.logoUrl} 
                     alt="Logo Igreja" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-contain" 
                     onError={() => setImgError(true)}
                 />
             </div>

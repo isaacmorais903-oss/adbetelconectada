@@ -38,11 +38,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="relative z-20 text-white p-12 max-w-lg">
             {APP_CONFIG.logoUrl && !imgError ? (
                 // AUMENTADO para w-40 h-40
-                <div className="w-40 h-40 mb-8 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl overflow-hidden">
+                <div className="w-40 h-40 mb-8 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl overflow-hidden p-2">
                      <img 
                         src={APP_CONFIG.logoUrl} 
                         alt="Logo" 
-                        className="w-full h-full object-cover" 
+                        className="w-full h-full object-contain" 
                         onError={() => setImgError(true)}
                      />
                 </div>
