@@ -304,7 +304,7 @@ const App: React.FC = () => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden md:flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 px-6 py-4 items-center justify-between shadow-sm transition-colors">
+        <header className="hidden md:flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40 px-6 py-4 items-center justify-between shadow-sm transition-colors">
           <div className="flex items-center gap-4">
              {currentView !== 'dashboard' && (
                 <button 
@@ -340,6 +340,13 @@ const App: React.FC = () => {
 
         <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
           {renderView()}
+          
+          {/* Mobile Watermark Footer - Appears at the bottom of content */}
+          <div className="mt-8 py-4 text-center md:hidden">
+             <p className="text-[10px] text-slate-400/60 dark:text-slate-600 uppercase tracking-widest font-semibold">
+                Idealizado por Isaac J P Morais
+             </p>
+          </div>
         </div>
 
         <BottomNav currentView={currentView} onChangeView={setCurrentView} />

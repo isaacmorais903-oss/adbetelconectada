@@ -125,6 +125,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
                 <p className="text-xs text-slate-500 truncate">{userRole === 'admin' ? 'Gestão Total' : 'Membro Ativo'}</p>
             </div>
         </div>
+
+        {/* WATERMARK FOOTER */}
+        <div className="text-center pt-2 border-t border-slate-800/50">
+            <p className="text-[10px] text-slate-600 font-medium uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
+                Idealizado por Isaac J P Morais
+            </p>
+        </div>
       </div>
     </div>
   );

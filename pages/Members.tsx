@@ -142,12 +142,12 @@ const MemberFormContent = ({
               {/* Naturalidade Dividida */}
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
-                  <input type="text" placeholder="Ex: Goiânia" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  <input type="text" placeholder="Ex: Goiânia" className="w-full h-[42px] px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
                       value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
               </div>
               <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
-                  <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                  <select className="w-full h-[42px] px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                       value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
                       <option value="">UF</option>
                       {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
@@ -496,7 +496,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-transparent">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Membros</h1>
           <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2">

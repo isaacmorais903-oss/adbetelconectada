@@ -77,7 +77,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
 
       {/* Lado Direito - Formuário */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
                 {APP_CONFIG.logoUrl && !imgError ? (
@@ -206,6 +206,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg text-xs text-yellow-800 dark:text-yellow-200 text-center">
                 <p className="font-bold mb-1">💡 Modo Demonstração Visual</p>
                 <p>Clique em "Entrar" para acessar o painel administrativo.</p>
+            </div>
+
+            {/* WATERMARK */}
+            <div className="mt-8 text-center pb-4">
+                 <p className="text-[10px] text-slate-400 dark:text-slate-600 font-medium uppercase tracking-widest opacity-70">
+                    Idealizado por Isaac J P Morais
+                 </p>
             </div>
         </div>
       </div>

@@ -98,7 +98,7 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-transparent">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Patrimônio da Igreja</h1>
           <p className="text-slate-500 dark:text-slate-400">Controle de inventário e bens materiais.</p>
