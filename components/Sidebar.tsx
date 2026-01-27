@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
 
@@ -10,9 +11,11 @@ interface SidebarProps {
   onToggleRole: () => void;
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
+  privacyMode?: boolean;
+  onTogglePrivacy?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onToggleRole, isDarkMode, onToggleTheme }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onToggleRole, isDarkMode, onToggleTheme, privacyMode, onTogglePrivacy }) => {
   const [imgError, setImgError] = useState(false);
   
   // Define menu items based on Role
@@ -21,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
         { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
         { id: 'members', label: 'Membros', icon: Users },
         { id: 'finance', label: 'Tesouraria', icon: DollarSign },
+        { id: 'inventory', label: 'Patrimônio', icon: Package }, 
         { id: 'announcements', label: 'Avisos & Eventos', icon: Bell },
         { id: 'prayers', label: 'Pedidos de Oração', icon: HeartHandshake },
         { id: 'locations', label: 'Endereços & Sede', icon: MapPin },
@@ -35,7 +39,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
       ];
 
   return (
-    // ALTERADO: de w-64 para w-72
     <div className="w-72 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 h-screen fixed left-0 top-0 flex flex-col z-30 hidden md:flex text-slate-300 transition-colors">
       <div 
         onClick={() => onChangeView('dashboard')}
@@ -85,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
 
       <div className="p-4 border-t border-slate-800 space-y-4 bg-slate-900 dark:bg-slate-950">
         
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
             <button 
                 onClick={onToggleTheme}
                 className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-yellow-400 transition-all"
@@ -93,12 +96,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
             >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <button 
+                onClick={onTogglePrivacy}
+                className={`flex items-center justify-center p-2 border border-slate-700 rounded-lg transition-all ${privacyMode ? 'bg-emerald-900/50 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                title="Modo Privacidade (Ocultar Dados)"
+            >
+                {privacyMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
              <button 
                 onClick={onToggleRole}
-                className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-all gap-2"
+                className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-all gap-1"
                 title="Alternar Perfil"
             >
-                <span className="text-xs font-bold">{userRole === 'admin' ? 'ADMIN' : 'USER'}</span>
+                <span className="text-[10px] font-bold">{userRole === 'admin' ? 'ADM' : 'USR'}</span>
                 <RefreshCw className="w-3 h-3" />
             </button>
         </div>

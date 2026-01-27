@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { Dashboard } from './pages/Dashboard';
@@ -8,15 +8,62 @@ import { Announcements } from './pages/Announcements';
 import { Finance } from './pages/Finance';
 import { Locations } from './pages/Locations';
 import { Prayers } from './pages/Prayers';
+import { Inventory } from './pages/Inventory'; 
 import { Login } from './pages/Login';
-import { View, UserRole } from './types';
-import { Bell, LogOut, Home, Moon, Sun, RefreshCw } from 'lucide-react';
+import { View, UserRole, Member, MemberStatus, Transaction, InventoryItem } from './types';
+import { Bell, LogOut, Home, Moon, Sun, RefreshCw, Eye, EyeOff } from 'lucide-react';
+
+// --- DADOS INICIAIS (Centralizados para Backup) ---
+
+const INITIAL_MEMBERS: Member[] = [
+  { 
+    id: '1', name: 'Carlos Silva', role: 'Membro', email: 'carlos@email.com', phone: '(11) 99999-9999', status: MemberStatus.ACTIVE, joinedAt: '2023-01-15', photoUrl: 'https://ui-avatars.com/api/?name=Carlos+Silva&background=random', address: 'Rua das Palmeiras, 123', birthDate: '1985-05-15', baptismDate: '2005-10-20', city: 'São Paulo', postalCode: '01001-000',
+    rg: '12.345.678-9', cpf: '123.456.789-00', maritalStatus: 'Casado', profession: 'Motorista', naturalness: 'São Paulo - SP', nationality: 'Brasileira', congregation: 'Sede', ministry: 'Nenhum'
+  },
+  { 
+    id: '2', name: 'Ana Souza', role: 'Diaconisa', email: 'ana@email.com', phone: '(11) 98888-8888', status: MemberStatus.ACTIVE, joinedAt: '2022-05-20', photoUrl: 'https://ui-avatars.com/api/?name=Ana+Souza&background=random',
+    maritalStatus: 'Casada', congregation: 'Sede' 
+  },
+];
+
+const INITIAL_TRANSACTIONS: Transaction[] = [
+  { id: '1', description: 'Dízimo - Carlos Silva', amount: 450.00, type: 'income', category: 'Dízimos', date: '2023-10-25', memberId: '1', paymentMethod: 'Pix' },
+  { id: '2', description: 'Conta de Luz', amount: 320.50, type: 'expense', category: 'Utilidades', date: '2023-10-24', paymentMethod: 'Outros' },
+  { id: '3', description: 'Oferta Especial', amount: 1200.00, type: 'income', category: 'Ofertas', date: '2023-10-23', paymentMethod: 'Dinheiro' },
+  { id: '4', description: 'Compra Material Limpeza', amount: 150.00, type: 'expense', category: 'Manutenção', date: '2023-10-22', paymentMethod: 'Cartão' },
+  { id: '5', description: 'Dízimo - Ana Souza', amount: 300.00, type: 'income', category: 'Dízimos', date: '2023-10-22', memberId: '2', paymentMethod: 'Pix' },
+  { id: '6', description: 'Oferta de Missões', amount: 150.00, type: 'income', category: 'Missões', date: '2023-10-20', paymentMethod: 'Dinheiro' },
+  { id: '7', description: 'Aluguel do Salão', amount: 1200.00, type: 'expense', category: 'Aluguel', date: '2023-10-05', paymentMethod: 'Pix' },
+];
+
+const INITIAL_INVENTORY: InventoryItem[] = [
+  { 
+    id: '1', name: 'Cadeira Empilhável Acolchoada', category: 'Móveis', quantity: 120, estimatedValue: 180.00, location: 'Templo Principal', status: 'Bom', acquisitionDate: '2022-05-10', description: 'Cadeiras azuis para a nave da igreja.'
+  },
+  { 
+    id: '2', name: 'Mesa de Som Behringer X32', category: 'Eletrônicos', quantity: 1, estimatedValue: 18000.00, location: 'Templo Principal', status: 'Bom', acquisitionDate: '2021-11-20', description: 'Mesa digital principal.'
+  },
+  { 
+    id: '3', name: 'Microfone Shure SM58', category: 'Eletrônicos', quantity: 4, estimatedValue: 850.00, location: 'Templo Principal', status: 'Desgastado', acquisitionDate: '2020-01-15'
+  },
+  { 
+    id: '4', name: 'Púlpito de Acrílico', category: 'Móveis', quantity: 1, estimatedValue: 2500.00, location: 'Templo Principal', status: 'Bom', acquisitionDate: '2019-08-10'
+  },
+];
 
 const App: React.FC = () => {
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [userRole, setUserRole] = useState<UserRole>('admin'); // Default role
+  const [userRole, setUserRole] = useState<UserRole>('admin'); 
+  
+  // Data State (Global - Centralized for Backup)
+  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+
+  // Security/Privacy State
+  const [privacyMode, setPrivacyMode] = useState(false);
   
   // Theme State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -39,6 +86,97 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // --- BACKUP & RESTORE LOGIC ---
+  const handleBackup = () => {
+      const backupData = {
+          version: '1.0',
+          timestamp: new Date().toISOString(),
+          data: {
+              members,
+              transactions,
+              inventory
+          }
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_adbetel_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
+  // --- CSV EXPORT LOGIC (Excel/Sheets) ---
+  const handleExportCSV = () => {
+    const downloadFile = (data: any[], filename: string) => {
+        if (!data || data.length === 0) return;
+
+        // Pega os cabeçalhos do primeiro objeto
+        const headers = Object.keys(data[0]).join(";");
+        
+        // Mapeia as linhas
+        const rows = data.map(row => 
+            Object.values(row).map(value => {
+                 if (value === null || value === undefined) return "";
+                 // Força string, escapa aspas duplas e envolve em aspas
+                 const stringValue = String(value).replace(/"/g, '""'); 
+                 return `"${stringValue}"`;
+            }).join(";")
+        );
+
+        // Adiciona BOM para o Excel reconhecer acentos (UTF-8)
+        const csvContent = "\uFEFF" + [headers, ...rows].join("\n");
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    
+    // Dispara downloads sequenciais com pequeno delay para evitar bloqueio do navegador
+    setTimeout(() => downloadFile(members, `membros_${dateStr}.csv`), 100);
+    setTimeout(() => downloadFile(transactions, `financeiro_${dateStr}.csv`), 600);
+    setTimeout(() => downloadFile(inventory, `patrimonio_${dateStr}.csv`), 1100);
+
+    alert("Iniciando download de 3 arquivos CSV (Membros, Financeiro, Patrimônio)... Verifique seus downloads.");
+  };
+
+  const handleRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const json = JSON.parse(event.target?.result as string);
+              if (json.data && json.data.members && json.data.transactions && json.data.inventory) {
+                  if(confirm(`Deseja restaurar o backup de ${new Date(json.timestamp).toLocaleDateString()}? Isso substituirá os dados atuais.`)) {
+                      setMembers(json.data.members);
+                      setTransactions(json.data.transactions);
+                      setInventory(json.data.inventory);
+                      alert('Dados restaurados com sucesso!');
+                  }
+              } else {
+                  alert('Arquivo de backup inválido.');
+              }
+          } catch (error) {
+              alert('Erro ao ler o arquivo de backup.');
+              console.error(error);
+          }
+      };
+      reader.readAsText(file);
+      // Reset input
+      e.target.value = '';
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -60,13 +198,23 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch(currentView) {
-      case 'dashboard': return <Dashboard userRole={userRole} onChangeView={setCurrentView} />;
-      case 'members': return <Members userRole={userRole} />;
-      case 'finance': return <Finance userRole={userRole} />;
+      case 'dashboard': 
+        return (
+            <Dashboard 
+                userRole={userRole} 
+                onChangeView={setCurrentView} 
+                onBackup={handleBackup}
+                onExportCSV={handleExportCSV}
+                onRestore={handleRestore}
+            />
+        );
+      case 'members': return <Members userRole={userRole} privacyMode={privacyMode} members={members} setMembers={setMembers} />;
+      case 'finance': return <Finance userRole={userRole} privacyMode={privacyMode} members={members} transactions={transactions} setTransactions={setTransactions} />;
+      case 'inventory': return <Inventory items={items => setInventory(items as InventoryItem[])} initialItems={inventory} />; 
       case 'announcements': return <Announcements />;
       case 'locations': return <Locations />;
       case 'prayers': return <Prayers />;
-      default: return <Dashboard userRole={userRole} onChangeView={setCurrentView} />;
+      default: return <Dashboard userRole={userRole} onChangeView={setCurrentView} onBackup={handleBackup} onRestore={handleRestore} />;
     }
   };
 
@@ -75,6 +223,7 @@ const App: React.FC = () => {
       case 'dashboard': return 'Início';
       case 'members': return userRole === 'admin' ? 'Membros' : 'Meu Perfil';
       case 'finance': return userRole === 'admin' ? 'Tesouraria' : 'Contribuições';
+      case 'inventory': return 'Patrimônio';
       case 'announcements': return 'Avisos';
       case 'locations': return 'Endereços';
       case 'prayers': return 'Orações';
@@ -87,6 +236,10 @@ const App: React.FC = () => {
     setCurrentView('dashboard');
   };
 
+  const togglePrivacy = () => {
+    setPrivacyMode(!privacyMode);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex font-sans transition-colors duration-200">
       {/* Sidebar for Desktop */}
@@ -97,9 +250,10 @@ const App: React.FC = () => {
         onToggleRole={toggleRole}
         isDarkMode={theme === 'dark'}
         onToggleTheme={toggleTheme}
+        privacyMode={privacyMode}
+        onTogglePrivacy={togglePrivacy}
       />
 
-      {/* ALTERADO: md:ml-64 para md:ml-72 */}
       <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0">
         {/* Mobile Header - App Style */}
         <header className="md:hidden bg-slate-900 dark:bg-black text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg relative z-10 transition-colors">
@@ -117,11 +271,11 @@ const App: React.FC = () => {
               </div>
               <div className="flex gap-2">
                  <button 
-                    onClick={toggleRole} 
-                    className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition flex items-center justify-center"
-                    title={userRole === 'admin' ? "Mudar para Membro" : "Mudar para Admin"}
+                    onClick={togglePrivacy}
+                    className={`p-2 rounded-full transition flex items-center justify-center ${privacyMode ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20'}`}
+                    title="Modo Privacidade"
                  >
-                    <RefreshCw className="w-5 h-5 text-blue-300" />
+                    {privacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                  </button>
                  <button onClick={toggleTheme} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
                     {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -136,7 +290,6 @@ const App: React.FC = () => {
               </div>
            </div>
            
-           {/* Mobile Page Title if not dashboard */}
            {currentView !== 'dashboard' && (
               <div className="flex items-center justify-between mt-2">
                 <h2 className="text-2xl font-bold">{getPageTitle()}</h2>
@@ -185,12 +338,10 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Area */}
         <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
           {renderView()}
         </div>
 
-        {/* Bottom Navigation for Mobile */}
         <BottomNav currentView={currentView} onChangeView={setCurrentView} />
       </main>
     </div>

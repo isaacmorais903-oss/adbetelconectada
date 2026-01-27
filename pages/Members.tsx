@@ -1,25 +1,372 @@
+
 import React, { useState } from 'react';
-import { Plus, Search, MoreVertical, Filter, Camera, User, Calendar, MapPin, Droplet, UserCheck, Edit2, FileBadge, CreditCard, CheckCircle, Award, Briefcase, Flag, Fingerprint, Heart, Church, Sparkles } from 'lucide-react';
+import { Plus, Search, Filter, Camera, User, Calendar, MapPin, Droplet, Sparkles, Edit2, FileBadge, CreditCard, Award, Briefcase, Fingerprint, Heart, Church, Shield, EyeOff, Save, X } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
 import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 
-const INITIAL_MEMBERS: Member[] = [
-  { 
-    id: '1', name: 'Carlos Silva', role: 'Membro', email: 'carlos@email.com', phone: '(11) 99999-9999', status: MemberStatus.ACTIVE, joinedAt: '2023-01-15', photoUrl: 'https://ui-avatars.com/api/?name=Carlos+Silva&background=random', address: 'Rua das Palmeiras, 123', birthDate: '1985-05-15', baptismDate: '2005-10-20', city: 'São Paulo', postalCode: '01001-000',
-    rg: '12.345.678-9', cpf: '123.456.789-00', maritalStatus: 'Casado', profession: 'Motorista', naturalness: 'São Paulo - SP', nationality: 'Brasileira', congregation: 'Sede', ministry: 'Nenhum'
-  },
-  { 
-    id: '2', name: 'Ana Souza', role: 'Diaconisa', email: 'ana@email.com', phone: '(11) 98888-8888', status: MemberStatus.ACTIVE, joinedAt: '2022-05-20', photoUrl: 'https://ui-avatars.com/api/?name=Ana+Souza&background=random',
-    maritalStatus: 'Casada', congregation: 'Sede' 
-  },
-];
-
 interface MembersProps {
     userRole: UserRole;
+    privacyMode?: boolean;
+    members: Member[];
+    setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
 }
 
-export const Members: React.FC<MembersProps> = ({ userRole }) => {
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+// ----------------------------------------------------------------------------
+// CONSTANTES E FORMATADORES
+// ----------------------------------------------------------------------------
+
+const BRAZIL_STATES = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
+const formatCPF = (value: string) => {
+  return value
+    .replace(/\D/g, '') // Remove tudo o que não é dígito
+    .replace(/(\d{3})(\d)/, '$1.$2') // Coloca um ponto entre o terceiro e o quarto dígitos
+    .replace(/(\d{3})(\d)/, '$1.$2') // Coloca um ponto entre o terceiro e o quarto dígitos de novo (para o segundo bloco de números)
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Coloca um hífen entre o terceiro e o quarto dígitos
+    .replace(/(-\d{2})\d+?$/, '$1'); // Impede que sejam digitados mais de 11 dígitos
+};
+
+const formatPhone = (value: string) => {
+  value = value.replace(/\D/g, "");
+  value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+  value = value.replace(/(\d)(\d{4})$/, "$1-$2");
+  return value.slice(0, 15); // Limita tamanho
+};
+
+const formatCEP = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2')
+    .slice(0, 10);
+};
+
+// ----------------------------------------------------------------------------
+// FUNÇÕES AUXILIARES
+// ----------------------------------------------------------------------------
+
+// Helper: Mask Sensitive Data
+const maskData = (value: string | undefined, type: 'email' | 'phone' | 'cpf' | 'rg' | 'text', isPrivacyActive: boolean) => {
+    if (!value) return '';
+    if (!isPrivacyActive) return value;
+
+    switch(type) {
+        case 'email':
+            const [user, domain] = value.split('@');
+            return `${user.substring(0, 2)}***@${domain}`;
+        case 'phone':
+            return value.substring(0, 5) + '****-****';
+        case 'cpf':
+            return '***.***.***-**';
+        case 'rg':
+            return '**.***.***-*';
+        default:
+            return '********';
+    }
+};
+
+// Helper: Calculate Age
+const calculateAge = (birthDate?: string) => {
+  if(!birthDate) return '';
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+  }
+  return age;
+};
+
+// ----------------------------------------------------------------------------
+// COMPONENTE DE FORMULÁRIO
+// ----------------------------------------------------------------------------
+
+const MemberFormContent = ({ 
+  data, 
+  onChange, 
+  isAdmin = false,
+  privacyMode = false,
+  availableCongregations,
+  onAddCongregation
+}: { 
+  data: Partial<Member>, 
+  onChange: (field: keyof Member, value: any) => void,
+  isAdmin?: boolean,
+  privacyMode?: boolean,
+  availableCongregations: string[],
+  onAddCongregation: (name: string) => void
+}) => {
+  const [isAddingCongregation, setIsAddingCongregation] = useState(false);
+  const [newCongregationName, setNewCongregationName] = useState('');
+
+  const handleSaveCongregation = () => {
+    if(newCongregationName.trim()) {
+      onAddCongregation(newCongregationName);
+      onChange('congregation', newCongregationName);
+      setNewCongregationName('');
+      setIsAddingCongregation(false);
+    }
+  };
+
+  return (
+  <div className="space-y-8">
+      
+      {/* 1. INFORMAÇÕES PESSOAIS */}
+      <section>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              1. Informações Pessoais
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="md:col-span-8">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
+              </div>
+              
+              <div className="md:col-span-2">
+                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Idade</label>
+                   <input type="text" className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed" 
+                      value={calculateAge(data.birthDate)} readOnly disabled />
+              </div>
+              
+              {/* Naturalidade Dividida */}
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
+                  <input type="text" placeholder="Ex: Goiânia" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
+                  <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                      value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
+                      <option value="">UF</option>
+                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                  </select>
+              </div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
+              </div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                      <CreditCard className="w-3 h-3"/> RG {privacyMode && <EyeOff className="w-3 h-3 text-red-400"/>}
+                  </label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={isAdmin && privacyMode ? maskData(data.rg, 'rg', privacyMode) : data.rg || ''} 
+                      onChange={e => onChange('rg', e.target.value)} 
+                      readOnly={isAdmin && privacyMode}
+                  />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                      <Fingerprint className="w-3 h-3"/> CPF {privacyMode && <EyeOff className="w-3 h-3 text-red-400"/>}
+                  </label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={isAdmin && privacyMode ? maskData(data.cpf, 'cpf', privacyMode) : data.cpf || ''} 
+                      onChange={e => onChange('cpf', formatCPF(e.target.value))} 
+                      readOnly={isAdmin && privacyMode}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                  />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Heart className="w-3 h-3"/> Estado Civil</label>
+                  <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                      value={data.maritalStatus || ''} onChange={e => onChange('maritalStatus', e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="Solteiro(a)">Solteiro(a)</option>
+                      <option value="Casado(a)">Casado(a)</option>
+                      <option value="Divorciado(a)">Divorciado(a)</option>
+                      <option value="Viúvo(a)">Viúvo(a)</option>
+                  </select>
+              </div>
+              <div className="md:col-span-12">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Briefcase className="w-3 h-3"/> Profissão</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} />
+              </div>
+          </div>
+      </section>
+
+      {/* 2. CONTATO E ENDEREÇO */}
+      <section>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              2. Contato e Endereço
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
+                  <input type="tel" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} />
+              </div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">E-mail</label>
+                  <input type="email" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.email || ''} onChange={e => onChange('email', e.target.value)} required 
+                      readOnly={!isAdmin} title={!isAdmin ? "Contate a secretaria para alterar o email" : ""} 
+                      style={!isAdmin ? {opacity: 0.7} : {}}
+                  />
+              </div>
+              <div className="md:col-span-12">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
+              </div>
+              
+              {/* Cidade e UF Separados */}
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.city || ''} onChange={e => onChange('city', e.target.value)} placeholder="Ex: Cristalina"/>
+              </div>
+              <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF</label>
+                   <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                      value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
+                      <option value="">UF</option>
+                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                  </select>
+              </div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CEP</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} placeholder="73.850-000" maxLength={10} />
+              </div>
+          </div>
+      </section>
+
+      {/* 3. INFORMAÇÕES ECLESIÁSTICAS */}
+      <section>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <Church className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              3. Informações Eclesiásticas
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cargo / Função</label>
+                   {isAdmin ? (
+                       <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                           value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
+                           <option value="Membro">Membro</option>
+                           <option value="Obreiro">Obreiro</option> {/* Adicionado Obreiro */}
+                           <option value="Diácono">Diácono</option>
+                           <option value="Presbítero">Presbítero</option>
+                           <option value="Evangelista">Evangelista</option>
+                           <option value="Pastor">Pastor</option>
+                           <option value="Missionário">Missionário</option>
+                           <option value="Músico">Músico</option>
+                           <option value="Líder">Líder</option>
+                           <option value="Visitante">Visitante</option>
+                       </select>
+                   ) : (
+                       <input type="text" className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400" value={data.role || ''} readOnly />
+                   )}
+              </div>
+              <div className="md:col-span-4">
+                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status</label>
+                   {isAdmin ? (
+                       <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                           value={data.status || MemberStatus.ACTIVE} onChange={e => onChange('status', e.target.value)}>
+                           <option value={MemberStatus.ACTIVE}>Ativo</option>
+                           <option value={MemberStatus.INACTIVE}>Inativo</option>
+                           <option value={MemberStatus.VISITOR}>Visitante</option>
+                       </select>
+                   ) : (
+                      <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${data.status === MemberStatus.ACTIVE ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          {data.status}
+                      </div>
+                   )}
+              </div>
+              
+              {/* Congregação Dinâmica */}
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Sede / Congregação</label>
+                  {isAddingCongregation ? (
+                     <div className="flex gap-1 animate-in fade-in zoom-in duration-200">
+                        <input 
+                            type="text"
+                            autoFocus
+                            className="w-full px-2 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                            placeholder="Nova Congregação"
+                            value={newCongregationName}
+                            onChange={(e) => setNewCongregationName(e.target.value)}
+                        />
+                        <button type="button" onClick={handleSaveCongregation} className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700"><Save className="w-4 h-4"/></button>
+                        <button type="button" onClick={() => setIsAddingCongregation(false)} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X className="w-4 h-4"/></button>
+                     </div>
+                  ) : (
+                     <div className="flex gap-2">
+                        <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                            value={data.congregation || 'Sede'} onChange={e => onChange('congregation', e.target.value)}>
+                             {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        {isAdmin && (
+                            <button 
+                                type="button" 
+                                onClick={() => setIsAddingCongregation(true)}
+                                className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                title="Nova Congregação"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        )}
+                     </div>
+                  )}
+              </div>
+
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ministério / Depto.</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil..." />
+              </div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Admissão</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
+              </div>
+
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Droplet className="w-3 h-3 text-blue-500"/> Data Batismo Águas</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
+              </div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-500"/> Data Batismo Esp. Santo</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
+              </div>
+              
+              <div className="md:col-span-12">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
+              </div>
+          </div>
+      </section>
+  </div>
+)};
+
+// ----------------------------------------------------------------------------
+// COMPONENTE PRINCIPAL
+// ----------------------------------------------------------------------------
+
+export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false, members, setMembers }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Admin State
@@ -27,27 +374,17 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentMember, setCurrentMember] = useState<Partial<Member>>({});
 
+  // Congregation List State
+  const [congregations, setCongregations] = useState<string[]>(['Sede', 'Congregação Jardim', 'Congregação Norte']);
+
   // Certificate Modal State
   const [showCertModal, setShowCertModal] = useState(false);
   const [selectedMemberForCert, setSelectedMemberForCert] = useState<Member | null>(null);
   const [certType, setCertType] = useState('Batismo nas Águas');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // Member State (Self Profile)
-  const [myProfile, setMyProfile] = useState<Member>(INITIAL_MEMBERS[0]);
-
-  // Helper: Calculate Age
-  const calculateAge = (birthDate?: string) => {
-    if(!birthDate) return '';
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-        age--;
-    }
-    return age;
-  };
+  // Member State (Self Profile) - In a real app this would come from auth context
+  const [myProfile, setMyProfile] = useState<Member>(members[0]);
 
   // -------------- MEMBER VIEW (MY PROFILE EDIT) --------------
   const handleMyProfileChange = (field: keyof Member, value: string) => {
@@ -57,6 +394,7 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
   const handleSaveMyProfile = (e: React.FormEvent) => {
     e.preventDefault();
     alert("Dados atualizados com sucesso!");
+    // Update global list as well
     setMembers(members.map(m => m.id === myProfile.id ? myProfile : m));
   };
 
@@ -66,259 +404,11 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
     setIsGeneratingPdf(false);
   };
 
-  // Common Form Component for Reusability (Admin Modal & Member Page)
-  const MemberFormContent = ({ 
-    data, 
-    onChange, 
-    isAdmin = false 
-  }: { 
-    data: Partial<Member>, 
-    onChange: (field: keyof Member, value: any) => void,
-    isAdmin?: boolean
-  }) => (
-    <div className="space-y-8">
-        
-        {/* 1. INFORMAÇÕES PESSOAIS */}
-        <section>
-            <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                1. Informações Pessoais
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-8">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
-                </div>
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
-                    <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
-                </div>
-                
-                <div className="md:col-span-2">
-                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Idade</label>
-                     <input type="text" className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed" 
-                        value={calculateAge(data.birthDate)} readOnly disabled />
-                </div>
-                <div className="md:col-span-5">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade</label>
-                    <input type="text" placeholder="Cidade - UF" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
-                </div>
-                <div className="md:col-span-5">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
-                </div>
-
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3"/> RG</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
-                </div>
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Fingerprint className="w-3 h-3"/> CPF</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.cpf || ''} onChange={e => onChange('cpf', e.target.value)} />
-                </div>
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Heart className="w-3 h-3"/> Estado Civil</label>
-                    <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
-                        value={data.maritalStatus || ''} onChange={e => onChange('maritalStatus', e.target.value)}>
-                        <option value="">Selecione</option>
-                        <option value="Solteiro(a)">Solteiro(a)</option>
-                        <option value="Casado(a)">Casado(a)</option>
-                        <option value="Divorciado(a)">Divorciado(a)</option>
-                        <option value="Viúvo(a)">Viúvo(a)</option>
-                    </select>
-                </div>
-                <div className="md:col-span-12">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Briefcase className="w-3 h-3"/> Profissão</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} />
-                </div>
-            </div>
-        </section>
-
-        {/* 2. CONTATO E ENDEREÇO */}
-        <section>
-            <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                2. Contato e Endereço
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
-                    <input type="tel" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.phone || ''} onChange={e => onChange('phone', e.target.value)} placeholder="(00) 00000-0000" />
-                </div>
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">E-mail</label>
-                    <input type="email" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.email || ''} onChange={e => onChange('email', e.target.value)} required 
-                        readOnly={!isAdmin} title={!isAdmin ? "Contate a secretaria para alterar o email" : ""} 
-                        style={!isAdmin ? {opacity: 0.7} : {}}
-                    />
-                </div>
-                <div className="md:col-span-12">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
-                </div>
-                <div className="md:col-span-8">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade - UF</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
-                </div>
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CEP</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.postalCode || ''} onChange={e => onChange('postalCode', e.target.value)} />
-                </div>
-            </div>
-        </section>
-
-        {/* 3. INFORMAÇÕES ECLESIÁSTICAS */}
-        <section>
-            <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
-                <Church className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                3. Informações Eclesiásticas
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cargo / Função</label>
-                     {isAdmin ? (
-                         <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                             value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
-                             <option value="Membro">Membro</option>
-                             <option value="Diácono">Diácono</option>
-                             <option value="Presbítero">Presbítero</option>
-                             <option value="Evangelista">Evangelista</option>
-                             <option value="Pastor">Pastor</option>
-                             <option value="Missionário">Missionário</option>
-                             <option value="Músico">Músico</option>
-                             <option value="Líder">Líder</option>
-                             <option value="Visitante">Visitante</option>
-                         </select>
-                     ) : (
-                         <input type="text" className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400" value={data.role || ''} readOnly />
-                     )}
-                </div>
-                <div className="md:col-span-4">
-                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status</label>
-                     {isAdmin ? (
-                         <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                             value={data.status || MemberStatus.ACTIVE} onChange={e => onChange('status', e.target.value)}>
-                             <option value={MemberStatus.ACTIVE}>Ativo</option>
-                             <option value={MemberStatus.INACTIVE}>Inativo</option>
-                             <option value={MemberStatus.VISITOR}>Visitante</option>
-                         </select>
-                     ) : (
-                        <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${data.status === MemberStatus.ACTIVE ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            {data.status}
-                        </div>
-                     )}
-                </div>
-                <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Congregação</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.congregation || ''} onChange={e => onChange('congregation', e.target.value)} />
-                </div>
-
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ministério / Depto.</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil..." />
-                </div>
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Admissão</label>
-                    <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
-                </div>
-
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Droplet className="w-3 h-3 text-blue-500"/> Data Batismo Águas</label>
-                    <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
-                </div>
-                <div className="md:col-span-6">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-500"/> Data Batismo Esp. Santo</label>
-                    <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
-                </div>
-                
-                <div className="md:col-span-12">
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
-                    <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
-                </div>
-            </div>
-        </section>
-    </div>
-  );
-
-  // VIEW FOR MEMBER (SELF-EDIT)
-  if (userRole === 'member') {
-    return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Meus Dados</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Mantenha seu cadastro completo.</p>
-                </div>
-                <button 
-                    onClick={() => handleGenerateCard(myProfile)}
-                    disabled={isGeneratingPdf}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium hover:bg-blue-700 shadow-md transition-all disabled:opacity-50"
-                >
-                    <CreditCard className="w-4 h-4" />
-                    {isGeneratingPdf ? 'Gerando...' : 'Minha Carteirinha'}
-                </button>
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
-                <div className="h-32 bg-gradient-to-r from-blue-500 to-sky-600 relative">
-                    <div className="absolute -bottom-12 left-8 group cursor-pointer">
-                        <div className="w-24 h-24 rounded-2xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden shadow-md relative transition-colors">
-                            <img src={myProfile.photoUrl} alt={myProfile.name} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Camera className="w-8 h-8 text-white" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="pt-14 px-8 pb-8">
-                    <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
-                        <div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{myProfile.name}</h2>
-                            <p className="text-slate-500 dark:text-slate-400">{myProfile.role} • {myProfile.congregation || 'Sede'}</p>
-                        </div>
-                        <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-bold border border-green-200 dark:border-green-900/50 flex items-center gap-1">
-                            <UserCheck className="w-3 h-3" />
-                            {myProfile.status}
-                        </span>
-                    </div>
-
-                    <form onSubmit={handleSaveMyProfile}>
-                        <MemberFormContent 
-                            data={myProfile} 
-                            onChange={handleMyProfileChange} 
-                            isAdmin={false} 
-                        />
-                        <div className="flex justify-end pt-8 border-t border-slate-100 dark:border-slate-700 mt-8">
-                            <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center gap-2">
-                                <CheckCircle className="w-5 h-5" />
-                                Salvar Alterações
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-  }
+  const handleAddCongregation = (name: string) => {
+      if(!congregations.includes(name)){
+          setCongregations([...congregations, name]);
+      }
+  };
 
   // -------------- ADMIN VIEW (LIST & EDIT) --------------
 
@@ -332,7 +422,8 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
     setCurrentMember({
         name: '', email: '', role: 'Membro', status: MemberStatus.ACTIVE,
         joinedAt: new Date().toISOString().split('T')[0],
-        nationality: 'Brasileira'
+        nationality: 'Brasileira',
+        congregation: 'Sede'
     });
     setShowAddModal(true);
   };
@@ -351,7 +442,6 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
   const handlePrintCertificate = async () => {
     if (!selectedMemberForCert) return;
     setIsGeneratingPdf(true);
-    // (Lógica de certificado mantida igual...)
     let desc = "";
     switch(certType) {
         case 'Batismo nas Águas':
@@ -409,7 +499,15 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Membros</h1>
-          <p className="text-slate-500 dark:text-slate-400">Gestão completa e emissão de documentos.</p>
+          <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              Gestão completa e emissão de documentos.
+              {privacyMode && (
+                  <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
+                      <Shield className="w-3 h-3" />
+                      Privacidade Ativa
+                  </span>
+              )}
+          </p>
         </div>
         <button 
           onClick={openAddModal}
@@ -474,8 +572,8 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-600 dark:text-slate-300">{member.email}</div>
-                    <div className="text-sm text-slate-400 dark:text-slate-500">{member.phone}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-300">{maskData(member.email, 'email', privacyMode)}</div>
+                    <div className="text-sm text-slate-400 dark:text-slate-500">{maskData(member.phone, 'phone', privacyMode)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-600">
@@ -518,7 +616,6 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
 
       {/* ADD/EDIT MODAL (ADMIN) */}
       {showAddModal && (
-        // ALTERADO: Adicionado md:left-72 para compensar a barra lateral fixa no desktop
         <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10 flex justify-between items-center">
@@ -533,7 +630,6 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
             
             <form onSubmit={handleSaveMember} className="overflow-y-auto p-8">
               <div className="flex flex-col lg:flex-row gap-8">
-                  {/* Photo Column */}
                   <div className="flex flex-col items-center space-y-3 lg:w-48 flex-shrink-0">
                       <div className="w-32 h-40 bg-slate-100 dark:bg-slate-700 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 hover:border-blue-400 transition-colors relative overflow-hidden group">
                         {currentMember.photoUrl ? (
@@ -549,12 +645,14 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
                       <span className="text-xs text-slate-400 text-center">Clique para enviar<br/>uma foto</span>
                   </div>
 
-                  {/* Form Fields Column */}
                   <div className="flex-1">
                       <MemberFormContent 
                         data={currentMember} 
                         onChange={(field, value) => setCurrentMember(prev => ({...prev, [field]: value}))}
                         isAdmin={true}
+                        privacyMode={privacyMode}
+                        availableCongregations={congregations}
+                        onAddCongregation={handleAddCongregation}
                       />
                   </div>
               </div>
@@ -579,12 +677,9 @@ export const Members: React.FC<MembersProps> = ({ userRole }) => {
         </div>
       )}
 
-      {/* CERTIFICATE GENERATION MODAL (Reused logic) */}
       {showCertModal && selectedMemberForCert && (
-        // ALTERADO: Adicionado md:left-72 aqui também
         <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6">
-                {/* ... (Modal content same as before) ... */}
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
                         <Award className="w-8 h-8" />

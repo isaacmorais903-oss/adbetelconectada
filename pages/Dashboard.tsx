@@ -1,5 +1,6 @@
-import React from 'react';
-import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight } from 'lucide-react';
+
+import React, { useRef } from 'react';
+import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight, Save, Upload, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { StatsCard } from '../components/StatsCard';
 import { UserRole, View } from '../types';
@@ -7,6 +8,9 @@ import { UserRole, View } from '../types';
 interface DashboardProps {
   userRole: UserRole;
   onChangeView?: (view: View) => void;
+  onBackup?: () => void;
+  onExportCSV?: () => void;
+  onRestore?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const data = [
@@ -18,7 +22,8 @@ const data = [
   { name: 'Jun', attendance: 185, donations: 5200 },
 ];
 
-export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, onBackup, onExportCSV, onRestore }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // ---------------- ADMIN DASHBOARD (Classic Web Analytics) ----------------
   if (userRole === 'admin') {
@@ -35,7 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) 
         </div>
 
         {/* Quick Actions - Admin */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
             <button 
                 onClick={() => onChangeView?.('members')}
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
@@ -43,7 +48,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) 
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
                     <PlusCircle className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-sm text-slate-700 dark:text-slate-200">Novo Membro</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Novo Membro</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('finance')}
@@ -52,7 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) 
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
                     <FileText className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-sm text-slate-700 dark:text-slate-200">Relatórios</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Relatórios</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('announcements')}
@@ -61,7 +66,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) 
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
                     <Send className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-sm text-slate-700 dark:text-slate-200">Novo Aviso</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Novo Aviso</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('finance')}
@@ -70,7 +75,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView }) 
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
                     <DollarSign className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-sm text-slate-700 dark:text-slate-200">Lançar Oferta</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Lançar Oferta</span>
+            </button>
+            
+            {/* BACKUP & EXPORT BUTTONS */}
+            
+            <button 
+                onClick={onExportCSV}
+                className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+                title="Baixar planilhas para Excel/Google Sheets"
+            >
+                <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                    <FileSpreadsheet className="w-6 h-6 text-green-700 dark:text-green-400" />
+                </div>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Exportar Excel</span>
+            </button>
+
+            <button 
+                onClick={onBackup}
+                className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+                title="Backup completo do sistema (JSON)"
+            >
+                <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50 transition-colors">
+                    <Save className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
+                </div>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Backup JSON</span>
+            </button>
+            
+            <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+            >
+                <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
+                    <Upload className="w-6 h-6 text-orange-700 dark:text-orange-400" />
+                </div>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Restaurar</span>
+                <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={onRestore}
+                    className="hidden" 
+                    accept=".json"
+                />
             </button>
         </div>
 

@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'admin' | 'member';
 
 export enum MemberStatus {
@@ -13,7 +14,8 @@ export interface Member {
   name: string;
   birthDate?: string;
   // Idade é calculado no front
-  naturalness?: string; // Naturalidade
+  naturalness?: string; // Agora usado para Cidade da Naturalidade
+  naturalnessState?: string; // Novo: UF da Naturalidade
   nationality?: string; // Nacionalidade
   rg?: string;
   cpf?: string;
@@ -26,6 +28,7 @@ export interface Member {
   phone: string;
   address?: string;
   city?: string;
+  state?: string; // Novo: UF do Endereço
   postalCode?: string;
 
   // 3. Informações Eclesiásticas
@@ -59,6 +62,7 @@ export interface Transaction {
   amount: number;
   type: 'income' | 'expense';
   category: string;
+  paymentMethod?: 'Pix' | 'Dinheiro' | 'Cartão' | 'Outros'; // Campo Adicionado
   date: string;
   memberId?: string;
 }
@@ -82,4 +86,16 @@ export interface PrayerRequest {
   isPrivate: boolean;
 }
 
-export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers';
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string; // Móveis, Eletrônicos, Instrumentos, Liturgia
+  quantity: number;
+  estimatedValue: number; // Valor unitário estimado
+  acquisitionDate?: string;
+  location: string; // Templo Principal, Salão Anexo, Secretaria
+  status: 'Novo' | 'Bom' | 'Desgastado' | 'Danificado' | 'Em Manutenção';
+  description?: string;
+}
+
+export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory';

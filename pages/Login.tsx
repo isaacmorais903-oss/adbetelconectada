@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Church, Mail, Lock, ArrowRight, User, Phone } from 'lucide-react';
+import { Church, Mail, Lock, ArrowRight, User, Phone, Wifi } from 'lucide-react';
 import { APP_CONFIG } from '../config';
 
 interface LoginProps {
@@ -95,13 +96,25 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </div>
                 )}
                 
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-                    {isRegistering ? 'Crie sua conta' : 'Bem-vindo de volta'}
+                {/* Alteração do Nome com Ícone de Conexão */}
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                    {isRegistering ? (
+                        'Crie sua conta'
+                    ) : (
+                        <>
+                            <span>ADBetel</span>
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none transform -rotate-12 mx-1">
+                                <Wifi className="w-6 h-6" />
+                            </div>
+                            <span className="text-blue-600 dark:text-blue-400">Conectada</span>
+                        </>
+                    )}
                 </h2>
+
                 <p className="text-slate-500 dark:text-slate-400 mt-2">
                     {isRegistering 
                         ? 'Preencha os dados para iniciar seu cadastro.' 
-                        : 'Acesse sua conta para gerenciar sua igreja.'}
+                        : <span className="italic">"Nós te recebemos de braços abertos"</span>}
                 </p>
             </div>
 
