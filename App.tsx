@@ -13,7 +13,7 @@ import { Login } from './pages/Login';
 import { View, UserRole, Member, MemberStatus, Transaction, InventoryItem } from './types';
 import { Bell, LogOut, Home, Moon, Sun, RefreshCw, Eye, EyeOff } from 'lucide-react';
 
-// --- DADOS INICIAIS (Centralizados para Backup) ---
+// --- DADOS INICIAIS (Usados apenas se não houver nada salvo) ---
 
 const INITIAL_MEMBERS: Member[] = [
   { 
@@ -57,10 +57,48 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [userRole, setUserRole] = useState<UserRole>('admin'); 
   
-  // Data State (Global - Centralized for Backup)
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  // Data State (Persistence Logic)
+  
+  // 1. Members
+  const [members, setMembers] = useState<Member[]>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('adbetel_members');
+        return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    }
+    return INITIAL_MEMBERS;
+  });
+
+  // 2. Transactions
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('adbetel_transactions');
+        return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    }
+    return INITIAL_TRANSACTIONS;
+  });
+
+  // 3. Inventory
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('adbetel_inventory');
+        return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+    }
+    return INITIAL_INVENTORY;
+  });
+
+  // --- EFEITOS PARA SALVAR AUTOMATICAMENTE ---
+  
+  useEffect(() => {
+    localStorage.setItem('adbetel_members', JSON.stringify(members));
+  }, [members]);
+
+  useEffect(() => {
+    localStorage.setItem('adbetel_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('adbetel_inventory', JSON.stringify(inventory));
+  }, [inventory]);
 
   // Security/Privacy State
   const [privacyMode, setPrivacyMode] = useState(false);
