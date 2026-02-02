@@ -38,12 +38,14 @@ const App: React.FC = () => {
 
   // 1. Auth Effect
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsAuthenticated(!!session);
+    // Correção TS: Tipagem explícita para a resposta do getSession
+    supabase.auth.getSession().then(({ data }: { data: { session: any } }) => {
+      setSession(data.session);
+      setIsAuthenticated(!!data.session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Correção TS: Tipagem explícita para _event e session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       setSession(session);
       setIsAuthenticated(!!session);
       if (session) {
