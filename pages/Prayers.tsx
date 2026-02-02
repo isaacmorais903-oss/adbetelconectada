@@ -1,31 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeartHandshake, Plus, MessageCircle, Lock, Globe, CheckCircle } from 'lucide-react';
 import { PrayerRequest } from '../types';
+import { supabase, isConfigured } from '../services/supabaseClient';
 
 const INITIAL_PRAYERS: PrayerRequest[] = [
   { id: '1', requesterName: 'Maria José', request: 'Pela saúde do meu esposo que fará cirurgia.', date: '2023-10-25', status: 'Em Oração', isPrivate: false },
-  { id: '2', requesterName: 'Anônimo', request: 'Por uma porta de emprego.', date: '2023-10-24', status: 'Novo', isPrivate: true },
-  { id: '3', requesterName: 'Família Souza', request: 'Agradecimento pelo livramento no trânsito.', date: '2023-10-23', status: 'Respondido', isPrivate: false },
 ];
 
 export const Prayers: React.FC = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>(INITIAL_PRAYERS);
   const [showModal, setShowModal] = useState(false);
   const [newPrayer, setNewPrayer] = useState({ requesterName: '', request: '', isPrivate: false });
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddPrayer = (e: React.FormEvent) => {
+  // Carregar Orações
+  useEffect(() => {
+      if(isConfigured) {
+          supabase.from('prayer_requests').select('*').order('date', {ascending: false})
+          .then(({data}) => {
+              if(data) setPrayers(data);
+          });
+      }
+  }, []);
+
+  const handleAddPrayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const prayer: PrayerRequest = {
-      id: Math.random().toString(),
-      requesterName: newPrayer.requesterName || 'Anônimo',
-      request: newPrayer.request,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Novo',
-      isPrivate: newPrayer.isPrivate
-    };
-    setPrayers([prayer, ...prayers]);
-    setShowModal(false);
-    setNewPrayer({ requesterName: '', request: '', isPrivate: false });
+    if(!newPrayer.request) return;
+    setIsSaving(true);
+    
+    try {
+        const payload = {
+          requesterName: newPrayer.requesterName || 'Anônimo',
+          request: newPrayer.request,
+          date: new Date().toISOString().split('T')[0],
+          status: 'Novo',
+          isPrivate: newPrayer.isPrivate
+        };
+
+        if(isConfigured) {
+            const { data, error } = await supabase.from('prayer_requests').insert(payload).select();
+            if(error) throw error;
+            if(data) setPrayers([data[0], ...prayers]);
+        } else {
+             // Fallback
+             const prayer = { ...payload, id: Math.random().toString() };
+             setPrayers([prayer as PrayerRequest, ...prayers]);
+        }
+        
+        setShowModal(false);
+        setNewPrayer({ requesterName: '', request: '', isPrivate: false });
+    } catch(error) {
+        console.error(error);
+        alert('Erro ao enviar oração.');
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -131,9 +160,10 @@ export const Prayers: React.FC = () => {
                         </button>
                         <button 
                         type="submit" 
+                        disabled={isSaving}
                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
-                        Enviar Pedido
+                        {isSaving ? 'Enviando...' : 'Enviar Pedido'}
                         </button>
                     </div>
                 </form>

@@ -1,26 +1,16 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Camera, User, Calendar, MapPin, Droplet, Sparkles, Edit2, FileBadge, CreditCard, Award, Briefcase, Fingerprint, Heart, Church, Shield, EyeOff, Save, X } from 'lucide-react';
+import { Plus, Search, Filter, Camera, User, Calendar, MapPin, Droplet, Sparkles, Edit2, FileBadge, CreditCard, Award, Briefcase, Fingerprint, Heart, Church, Shield, EyeOff, Save, X, Upload, Trash2 } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
 import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
-// ... (MANTER AS CONSTANTES E FORMATADORES IGUAIS AO ARQUIVO ORIGINAL - BRAZIL_STATES, formatCPF, etc. Para economizar espaço, assuma que estão aqui)
-// Se eu cortar, o código quebra. Vou recolocar as constantes essenciais.
-
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+
 const formatCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
 const formatPhone = (v: string) => v.replace(/\D/g, "").replace(/^(\d{2})(\d)/g, "($1) $2").replace(/(\d)(\d{4})$/, "$1-$2").slice(0, 15);
 const formatCEP = (v: string) => v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1.$2').replace(/\.(\d{3})(\d)/, '.$1-$2').slice(0, 10);
-const calculateAge = (birthDate?: string) => {
-  if(!birthDate) return '';
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-};
+
 const maskData = (value: string | undefined, type: any, isPrivacyActive: boolean) => {
     if (!value) return '';
     if (!isPrivacyActive) return value;
@@ -28,19 +18,28 @@ const maskData = (value: string | undefined, type: any, isPrivacyActive: boolean
     return '********';
 };
 
-// ... MemberFormContent Component (Mantido identico, não precisa reescrever todo, mas para garantir funcionamento no replace, preciso incluir o componente MemberFormContent simplificado ou completo se solicitado. 
-// Para ser seguro, vou incluir a interface e o componente completo pois o XML replace substitui o arquivo todo).
-
-interface MembersProps {
-    userRole: UserRole;
-    privacyMode?: boolean;
-    members: Member[];
-    setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+interface MemberFormContentProps {
+    data: Partial<Member>;
+    onChange: (field: keyof Member, value: any) => void;
+    isAdmin: boolean;
+    availableCongregations: string[];
+    onAddCongregation: (name: string) => void;
 }
 
-const MemberFormContent = ({ data, onChange, isAdmin = false, privacyMode = false, availableCongregations, onAddCongregation }: any) => {
+const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, isAdmin, availableCongregations, onAddCongregation }) => {
   const [isAddingCongregation, setIsAddingCongregation] = useState(false);
   const [newCongregationName, setNewCongregationName] = useState('');
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange('photoUrl', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSaveCongregation = () => {
     if(newCongregationName.trim()) {
@@ -53,6 +52,27 @@ const MemberFormContent = ({ data, onChange, isAdmin = false, privacyMode = fals
 
   return (
   <div className="space-y-8">
+      
+      {/* SEÇÃO DA FOTO DE PERFIL */}
+      <div className="flex flex-col items-center justify-center mb-8">
+        <div className="relative group">
+            <div className="w-32 h-32 rounded-full border-4 border-slate-100 dark:border-slate-700 overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-xl">
+                {data.photoUrl ? (
+                    <img src={data.photoUrl} alt="Foto Perfil" className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                        <User className="w-16 h-16" />
+                    </div>
+                )}
+            </div>
+            <label htmlFor="photo-upload" className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110">
+                <Camera className="w-5 h-5" />
+                <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </label>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 font-medium">Foto do Membro</p>
+      </div>
+
       {/* 1. INFORMAÇÕES PESSOAIS */}
       <section>
           <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
@@ -61,56 +81,183 @@ const MemberFormContent = ({ data, onChange, isAdmin = false, privacyMode = fals
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
-                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none" 
+                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
                       value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
-                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none" 
+                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
                       value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
               </div>
-              {/* Demais campos resumidos para o XML não estourar, mantendo a estrutura lógica */}
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Naturalidade</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} /></div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Profissão</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} /></div>
-               <div className="md:col-span-4"><label className="text-xs text-slate-500">CPF</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} /></div>
-               <div className="md:col-span-4"><label className="text-xs text-slate-500">RG</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} /></div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CPF</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RG</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
+              </div>
+              <div className="md:col-span-4">
+                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado Civil</label>
+                   <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.maritalStatus || 'Solteiro(a)'} onChange={e => onChange('maritalStatus', e.target.value)}>
+                      <option value="Solteiro(a)">Solteiro(a)</option>
+                      <option value="Casado(a)">Casado(a)</option>
+                      <option value="Viúvo(a)">Viúvo(a)</option>
+                      <option value="Divorciado(a)">Divorciado(a)</option>
+                   </select>
+              </div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
+              </div>
+              <div className="md:col-span-5">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
+              </div>
+              <div className="md:col-span-3">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
+                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
+                     <option value="">Selecione</option>
+                     {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                  </select>
+              </div>
+
+              <div className="md:col-span-12">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Profissão</label>
+                  <div className="relative">
+                      <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input className="w-full pl-9 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
+                  </div>
+              </div>
           </div>
       </section>
 
       {/* 2. CONTATO */}
       <section>
-          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 pb-2 mb-4">2. Contato</h4>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" /> 2. Contato & Endereço
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Telefone</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} /></div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Email</label><input type="email" className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.email || ''} onChange={e => onChange('email', e.target.value)} /></div>
-              <div className="md:col-span-12"><label className="text-xs text-slate-500">Endereço</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.address || ''} onChange={e => onChange('address', e.target.value)} /></div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Cidade</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.city || ''} onChange={e => onChange('city', e.target.value)} /></div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">CEP</label><input className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} /></div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" />
+              </div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</label>
+                  <input type="email" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
+              </div>
+              
+              <div className="md:col-span-3">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CEP</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} />
+              </div>
+              <div className="md:col-span-9">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
+              </div>
+              
+              <div className="md:col-span-8">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade</label>
+                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado (UF)</label>
+                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
+                     <option value="">Selecione</option>
+                     {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                  </select>
+              </div>
           </div>
       </section>
 
       {/* 3. ECLESIASTICO */}
       <section>
-          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 pb-2 mb-4">3. Eclesiástico</h4>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <Church className="w-4 h-4 text-blue-600 dark:text-blue-400" /> 3. Dados Eclesiásticos
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
-                 <label className="text-xs text-slate-500">Cargo</label>
-                 <select className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
-                    <option value="Membro">Membro</option><option value="Obreiro">Obreiro</option><option value="Diácono">Diácono</option><option value="Pastor">Pastor</option>
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Congregação</label>
+                 {isAddingCongregation ? (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        autoFocus
+                        className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white"
+                        placeholder="Nome da nova congregação"
+                        value={newCongregationName}
+                        onChange={e => setNewCongregationName(e.target.value)}
+                      />
+                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"><Save className="w-4 h-4"/></button>
+                      <button type="button" onClick={() => setIsAddingCongregation(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><X className="w-4 h-4"/></button>
+                    </div>
+                 ) : (
+                    <div className="flex gap-2">
+                      <select className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.congregation || 'Sede'} onChange={e => onChange('congregation', e.target.value)}>
+                          {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Congregação"><Plus className="w-4 h-4"/></button>
+                    </div>
+                 )}
+              </div>
+
+              <div className="md:col-span-3">
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cargo / Função</label>
+                 <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
+                    <option value="Membro">Membro</option>
+                    <option value="Cooperador">Cooperador</option>
+                    <option value="Diácono">Diácono</option>
+                    <option value="Presbítero">Presbítero</option>
+                    <option value="Evangelista">Evangelista</option>
+                    <option value="Pastor">Pastor</option>
+                    <option value="Missionário">Missionário</option>
+                    <option value="Músico">Músico</option>
                  </select>
+              </div>
+              <div className="md:col-span-3">
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Situação (Status)</label>
+                 <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                    <option value="Visitante">Visitante</option>
+                    <option value="Em Disciplina">Em Disciplina</option>
+                 </select>
+              </div>
+
+              <div className="md:col-span-6">
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ministério / Departamento</label>
+                 <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil, Jovens" />
               </div>
               <div className="md:col-span-6">
-                 <label className="text-xs text-slate-500">Status</label>
-                 <select className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
-                    <option value="Ativo">Ativo</option><option value="Inativo">Inativo</option>
-                 </select>
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
+                 <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
               </div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Data Batismo</label><input type="date" className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} /></div>
-              <div className="md:col-span-6"><label className="text-xs text-slate-500">Membro Desde</label><input type="date" className="w-full border rounded p-2 dark:bg-slate-700 dark:border-slate-600" value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} /></div>
+
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Admissão</label>
+                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Droplet className="w-3 h-3 text-blue-500"/> Batismo nas Águas</label>
+                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
+              </div>
+              <div className="md:col-span-4">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-500"/> Batismo Espírito Santo</label>
+                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
+              </div>
           </div>
       </section>
   </div>
 )};
+
+interface MembersProps {
+    userRole: UserRole;
+    privacyMode?: boolean;
+    members: Member[];
+    setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+}
 
 export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false, members, setMembers }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,6 +292,19 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     setShowAddModal(true);
   };
 
+  const handleDeleteMember = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este membro?')) return;
+    try {
+        if (isConfigured) {
+            const { error } = await supabase.from('members').delete().eq('id', id);
+            if(error) throw error;
+        }
+        setMembers(members.filter(m => m.id !== id));
+    } catch (error: any) {
+        alert("Erro ao excluir: " + error.message);
+    }
+  };
+
   const handleSaveMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentMember.name) return;
@@ -153,20 +313,15 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     try {
         if (isConfigured) {
             // SUPABASE SAVE
-            // Remove campos undefined para evitar erro, se necessário, ou garanta que tabela aceite null
-            const payload = {
-                ...currentMember,
-                // Garantir fotoUrl padrão
-                photoUrl: currentMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentMember.name || '')}&background=random`
-            };
+            const payload = { ...currentMember };
             
-            // Se estiver editando, usa ID, senão deixa o banco gerar (ou gera aqui se preferir)
-            // Se for novo, não envie o ID se o banco gera UUID. Se o código gera, envie. 
-            // O código original gera ID string aleatória. O Supabase espera UUID.
-            // Solução: Deixe o Supabase gerar o ID no insert. No update, use o ID existente.
-            
+            // Gerar avatar padrão se não tiver foto
+            if (!payload.photoUrl) {
+               payload.photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name || '')}&background=random&color=fff&size=128`;
+            }
+
             if (!isEditing) {
-                delete payload.id; // Deixa o banco criar o UUID
+                delete payload.id; 
             }
 
             const { data, error } = await supabase
@@ -177,7 +332,6 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             if (error) throw error;
             
             if (data) {
-                // Atualiza estado local
                 const savedMember = data[0] as Member;
                 if (isEditing) {
                     setMembers(members.map(m => m.id === savedMember.id ? savedMember : m));
@@ -190,7 +344,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             const member: Member = {
                 ...currentMember as Member,
                 id: currentMember.id || Math.random().toString(36).substr(2, 9),
-                photoUrl: currentMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentMember.name || '')}&background=random`
+                photoUrl: currentMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentMember.name || '')}&background=random&color=fff&size=128`
             };
             if (isEditing) {
                 setMembers(members.map(m => m.id === member.id ? member : m));
@@ -225,7 +379,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="relative flex-1 max-w-md">
             <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            <input type="text" placeholder="Buscar..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
+            <input type="text" placeholder="Buscar por nome ou cargo..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
@@ -260,8 +414,13 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                   </td>
                   <td className="px-6 py-4"><span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{member.status}</span></td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => handleGenerateCard(member)} className="text-blue-600 hover:text-blue-800 mr-3" title="Carteirinha"><CreditCard className="w-5 h-5"/></button>
-                    <button onClick={() => openEditModal(member)} className="text-slate-400 hover:text-blue-600"><Edit2 className="w-5 h-5" /></button>
+                    <div className="flex justify-end gap-2">
+                        <button onClick={() => handleGenerateCard(member)} className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded" title="Carteirinha"><CreditCard className="w-5 h-5"/></button>
+                        <button onClick={() => openEditModal(member)} className="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 rounded" title="Editar"><Edit2 className="w-5 h-5" /></button>
+                        {userRole === 'admin' && (
+                             <button onClick={() => handleDeleteMember(member.id)} className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded" title="Excluir"><Trash2 className="w-5 h-5" /></button>
+                        )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -275,14 +434,14 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[90vh]">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between">
               <h3 className="text-xl font-bold dark:text-white">{isEditing ? 'Editar' : 'Novo'} Membro</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-2xl">&times;</button>
+              <button onClick={() => setShowAddModal(false)} className="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
             </div>
             <form onSubmit={handleSaveMember} className="overflow-y-auto p-8">
                <MemberFormContent data={currentMember} onChange={(f: any, v: any) => setCurrentMember(prev => ({...prev, [f]: v}))} isAdmin={true} availableCongregations={congregations} onAddCongregation={(name: string) => setCongregations([...congregations, name])} />
-               <div className="flex gap-4 mt-8">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl dark:border-slate-600 dark:text-white">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                      {isSaving ? 'Salvando...' : 'Salvar'}
+               <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl border-slate-300 dark:border-slate-600 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700">Cancelar</button>
+                  <button type="submit" disabled={isSaving} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none font-medium">
+                      {isSaving ? 'Salvando...' : 'Salvar Membro'}
                   </button>
                </div>
             </form>

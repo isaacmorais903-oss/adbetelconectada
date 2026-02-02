@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Package, Plus, Search, Filter, Trash2, Edit2, Archive, DollarSign, Box } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { StatsCard } from '../components/StatsCard';
+import { supabase, isConfigured } from '../services/supabaseClient';
 
 interface InventoryProps {
     initialItems: InventoryItem[];
@@ -13,6 +13,7 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Use local state if not provided, but in this architecture it will always be provided by App
   const items = initialItems; 
@@ -43,22 +44,55 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
     item.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSaveItem = (e: React.FormEvent) => {
+  const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentItem.name) return;
+    setIsSaving(true);
 
-    if (isEditing && currentItem.id) {
-        handleUpdateItems(items.map(i => i.id === currentItem.id ? { ...i, ...currentItem } as InventoryItem : i));
-    } else {
-        const newItem: InventoryItem = {
-            ...currentItem as InventoryItem,
-            id: Math.random().toString(36).substr(2, 9),
-            estimatedValue: Number(currentItem.estimatedValue) || 0,
-            quantity: Number(currentItem.quantity) || 1
-        };
-        handleUpdateItems([newItem, ...items]);
+    try {
+        if (isConfigured) {
+            // SUPABASE SAVE
+            const payload = { ...currentItem };
+            
+            // Remove ID se for novo para o banco gerar, ou mantém se for edição
+            if (!isEditing) delete payload.id;
+
+            const { data, error } = await supabase
+                .from('inventory')
+                .upsert(payload)
+                .select();
+
+            if (error) throw error;
+
+            if (data) {
+                const savedItem = data[0] as InventoryItem;
+                if (isEditing) {
+                    handleUpdateItems(items.map(i => i.id === savedItem.id ? savedItem : i));
+                } else {
+                    handleUpdateItems([savedItem, ...items]);
+                }
+            }
+        } else {
+            // LOCAL FALLBACK
+            if (isEditing && currentItem.id) {
+                handleUpdateItems(items.map(i => i.id === currentItem.id ? { ...i, ...currentItem } as InventoryItem : i));
+            } else {
+                const newItem: InventoryItem = {
+                    ...currentItem as InventoryItem,
+                    id: Math.random().toString(36).substr(2, 9),
+                    estimatedValue: Number(currentItem.estimatedValue) || 0,
+                    quantity: Number(currentItem.quantity) || 1
+                };
+                handleUpdateItems([newItem, ...items]);
+            }
+        }
+        setShowModal(false);
+    } catch (error: any) {
+        console.error("Erro ao salvar item:", error);
+        alert("Erro ao salvar: " + error.message);
+    } finally {
+        setIsSaving(false);
     }
-    setShowModal(false);
   };
 
   const openAddModal = () => {
@@ -79,9 +113,18 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja remover este item do inventário?')) {
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover este item do inventário?')) return;
+    
+    try {
+        if (isConfigured) {
+            const { error } = await supabase.from('inventory').delete().eq('id', id);
+            if (error) throw error;
+        }
         handleUpdateItems(items.filter(i => i.id !== id));
+    } catch (error: any) {
+        console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir item.");
     }
   };
 
@@ -363,9 +406,10 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
                     </button>
                     <button 
                         type="submit" 
+                        disabled={isSaving}
                         className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-lg shadow-blue-200 dark:shadow-none transition-colors"
                     >
-                        Salvar Item
+                        {isSaving ? 'Salvando...' : 'Salvar Item'}
                     </button>
                 </div>
             </form>

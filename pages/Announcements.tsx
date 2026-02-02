@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Sparkles, Send, Trash2, AlertTriangle, Calendar } from 'lucide-react';
 import { Announcement, AnnouncementType } from '../types';
 import { generateAnnouncementContent } from '../services/geminiService';
+import { supabase, isConfigured } from '../services/supabaseClient';
 
 const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   { 
@@ -10,13 +11,6 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
     content: 'Neste domingo teremos um culto especial voltado para a bênção das famílias. Traga seus parentes e convidados para um tempo precioso de comunhão.', 
     type: AnnouncementType.EVENT, 
     date: '2023-10-25' 
-  },
-  { 
-    id: '2', 
-    title: 'Reforma do Telhado', 
-    content: 'Atenção membros, devido à reforma no telhado, a entrada lateral estará fechada temporariamente. Usem a entrada principal.', 
-    type: AnnouncementType.URGENT, 
-    date: '2023-10-24' 
   },
 ];
 
@@ -28,7 +22,18 @@ export const Announcements: React.FC = () => {
     type: AnnouncementType.GENERAL
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
+
+  // Carrega Avisos
+  useEffect(() => {
+    if(isConfigured) {
+      supabase.from('announcements').select('*').order('date', { ascending: false })
+      .then(({ data }) => {
+        if(data) setAnnouncements(data);
+      });
+    }
+  }, []);
 
   const handleGenerateContent = async () => {
     if (!aiTopic) return;
@@ -38,25 +43,49 @@ export const Announcements: React.FC = () => {
     setIsGenerating(false);
   };
 
-  const handleAddAnnouncement = (e: React.FormEvent) => {
+  const handleAddAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnnouncement.title || !newAnnouncement.content) return;
+    setIsSaving(true);
 
-    const announcement: Announcement = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: newAnnouncement.title,
-      content: newAnnouncement.content,
-      type: newAnnouncement.type || AnnouncementType.GENERAL,
-      date: new Date().toISOString().split('T')[0]
-    };
+    try {
+        const payload = {
+          title: newAnnouncement.title,
+          content: newAnnouncement.content,
+          type: newAnnouncement.type || AnnouncementType.GENERAL,
+          date: new Date().toISOString().split('T')[0]
+        };
 
-    setAnnouncements([announcement, ...announcements]);
-    setNewAnnouncement({ title: '', content: '', type: AnnouncementType.GENERAL });
-    setAiTopic('');
+        if (isConfigured) {
+            const { data, error } = await supabase.from('announcements').insert(payload).select();
+            if(error) throw error;
+            if(data) setAnnouncements([data[0], ...announcements]);
+        } else {
+             // Fallback
+             const announcement = { ...payload, id: Math.random().toString(36).substr(2,9) };
+             setAnnouncements([announcement, ...announcements]);
+        }
+
+        setNewAnnouncement({ title: '', content: '', type: AnnouncementType.GENERAL });
+        setAiTopic('');
+    } catch (error) {
+        console.error(error);
+        alert('Erro ao salvar aviso.');
+    } finally {
+        setIsSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter(a => a.id !== id));
+  const handleDelete = async (id: string) => {
+    if(!confirm('Deseja excluir este aviso?')) return;
+    try {
+        if(isConfigured) {
+            await supabase.from('announcements').delete().eq('id', id);
+        }
+        setAnnouncements(announcements.filter(a => a.id !== id));
+    } catch(e) {
+        console.error(e);
+    }
   };
 
   const getTypeColor = (type: AnnouncementType) => {
@@ -152,9 +181,10 @@ export const Announcements: React.FC = () => {
 
             <button 
               type="submit" 
+              disabled={isSaving}
               className="w-full bg-slate-900 dark:bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors shadow-lg shadow-slate-200 dark:shadow-none"
             >
-              Publicar Aviso
+              {isSaving ? 'Publicando...' : 'Publicar Aviso'}
             </button>
           </form>
         </div>
