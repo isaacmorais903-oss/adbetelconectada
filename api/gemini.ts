@@ -11,16 +11,9 @@ export default async function handler(request: Request) {
 
   try {
     const { topic, tone } = await request.json();
-    const apiKey = process.env.API_KEY;
-
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Server configuration error: API Key missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
+    
+    // API key must be used directly from process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const prompt = `
       Você é um assistente de comunicação para uma igreja. 
@@ -33,7 +26,7 @@ export default async function handler(request: Request) {
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-latest', // Modelo atualizado conforme diretrizes
+      model: 'gemini-3-flash-preview', // Updated to recommended model for basic text tasks
       contents: prompt,
     });
 
