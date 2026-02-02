@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Camera, User, Calendar, MapPin, Droplet, Sparkles, Edit2, FileBadge, CreditCard, Award, Briefcase, Fingerprint, Heart, Church, Shield, EyeOff, Save, X, Upload, Trash2 } from 'lucide-react';
+import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
 import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
@@ -190,7 +190,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                         value={newCongregationName}
                         onChange={e => setNewCongregationName(e.target.value)}
                       />
-                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"><Save className="w-4 h-4"/></button>
+                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"><CheckCircle className="w-4 h-4"/></button>
                       <button type="button" onClick={() => setIsAddingCongregation(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><X className="w-4 h-4"/></button>
                     </div>
                  ) : (
@@ -271,6 +271,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const [showCertModal, setShowCertModal] = useState(false);
   const [selectedMemberForCert, setSelectedMemberForCert] = useState<Member | null>(null);
   const [certType, setCertType] = useState('Batismo nas Águas');
+  const [certDesc, setCertDesc] = useState('Declaramos que o membro acima está em plena comunhão com esta igreja.');
 
   const filteredMembers = members.filter(member => 
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -290,6 +291,12 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     setIsEditing(true);
     setCurrentMember({ ...member });
     setShowAddModal(true);
+  };
+
+  const openCertModal = (member: Member) => {
+    setSelectedMemberForCert(member);
+    setCertType('Batismo nas Águas');
+    setShowCertModal(true);
   };
 
   const handleDeleteMember = async (id: string) => {
@@ -363,6 +370,13 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
 
   const handleGenerateCard = (member: Member) => generateMembershipCard(member);
   
+  const handleGenerateCertificate = () => {
+    if(selectedMemberForCert) {
+        generateCertificate(selectedMemberForCert, certType, certDesc);
+        setShowCertModal(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 border-b border-transparent flex justify-between items-center">
@@ -416,6 +430,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                         <button onClick={() => handleGenerateCard(member)} className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded" title="Carteirinha"><CreditCard className="w-5 h-5"/></button>
+                        <button onClick={() => openCertModal(member)} className="text-amber-600 hover:text-amber-800 p-2 hover:bg-amber-50 rounded" title="Gerar Certificado"><FileBadge className="w-5 h-5"/></button>
                         <button onClick={() => openEditModal(member)} className="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 rounded" title="Editar"><Edit2 className="w-5 h-5" /></button>
                         {userRole === 'admin' && (
                              <button onClick={() => handleDeleteMember(member.id)} className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded" title="Excluir"><Trash2 className="w-5 h-5" /></button>
@@ -447,6 +462,64 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE CERTIFICADOS */}
+      {showCertModal && (
+          <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6">
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <FileBadge className="w-6 h-6 text-amber-500" />
+                        Emitir Certificado
+                    </h3>
+                    <button onClick={() => setShowCertModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
+                 </div>
+                 
+                 <div className="space-y-4">
+                     <div>
+                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Membro</label>
+                         <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-medium text-slate-700 dark:text-slate-200">
+                             {selectedMemberForCert?.name}
+                         </div>
+                     </div>
+
+                     <div>
+                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Certificado</label>
+                         <select 
+                            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 dark:bg-slate-700 dark:text-white"
+                            value={certType}
+                            onChange={e => setCertType(e.target.value)}
+                         >
+                             <option value="Batismo nas Águas">Batismo nas Águas</option>
+                             <option value="Apresentação de Criança">Apresentação de Criança</option>
+                             <option value="Membro da Igreja">Membro da Igreja</option>
+                             <option value="Consagração de Obreiro">Consagração de Obreiro</option>
+                             <option value="Conclusão de Discipulado">Conclusão de Discipulado</option>
+                             <option value="Reconhecimento">Honra ao Mérito</option>
+                         </select>
+                     </div>
+
+                     <div>
+                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Texto do Certificado / Observação</label>
+                         <textarea 
+                            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 dark:bg-slate-700 dark:text-white"
+                            rows={4}
+                            value={certDesc}
+                            onChange={e => setCertDesc(e.target.value)}
+                         ></textarea>
+                     </div>
+
+                     <button 
+                        onClick={handleGenerateCertificate}
+                        className="w-full py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 flex justify-center items-center gap-2 mt-4"
+                     >
+                         <FileBadge className="w-5 h-5" />
+                         Gerar PDF
+                     </button>
+                 </div>
+             </div>
+          </div>
       )}
     </div>
   );
