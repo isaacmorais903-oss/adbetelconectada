@@ -72,9 +72,10 @@ export interface Location {
   name: string;
   address: string;
   city: string;
-  type: 'Sede' | 'Congregação';
+  type: 'Sede' | 'Congregação' | 'Ponto de Pregação' | string;
   serviceTimes: string;
   mapUrl: string; // Google Maps Link
+  imageUrl?: string; // Foto da fachada
 }
 
 export interface PrayerRequest {

@@ -1,9 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, CreditCard, Banknote, FileText, User, ChevronDown } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
 import { Transaction, UserRole, Member } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
+import { generateFinancialReport } from '../services/pdfService';
+import Papa from 'papaparse';
 
 interface FinanceProps {
     userRole: UserRole;
@@ -15,8 +17,10 @@ interface FinanceProps {
 
 export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false, members = [], transactions, setTransactions }) => {
   const [showModal, setShowModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados de Filtro
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -165,17 +169,159 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       }));
   };
 
+  // --- EXPORT FUNCTIONALITY ---
+  const handleExportPDF = () => {
+    if (filteredTransactions.length === 0) {
+        alert("Não há lançamentos para exportar no período selecionado.");
+        return;
+    }
+    generateFinancialReport(filteredTransactions);
+  };
+
+  // --- IMPORT FUNCTIONALITY ---
+  const parseCurrencyBR = (value: string) => {
+    // Remove R$, espaços, pontos de milhar e troca vírgula por ponto
+    const clean = value.replace('R$', '').trim().replace(/\./g, '').replace(',', '.');
+    return parseFloat(clean) || 0;
+  };
+
+  const parseDateBR = (value: string) => {
+    // Tenta converter DD/MM/AAAA ou DD-MM-AAAA para YYYY-MM-DD
+    if (value.includes('/')) {
+        const [d, m, y] = value.split('/');
+        return `${y}-${m}-${d}`;
+    }
+    if (value.includes('-') && value.split('-')[0].length === 2) {
+        const [d, m, y] = value.split('-');
+        return `${y}-${m}-${d}`;
+    }
+    // Se já estiver em YYYY-MM-DD ou formato ISO
+    return !isNaN(Date.parse(value)) ? new Date(value).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+            const importedTransactions: any[] = [];
+            let errorCount = 0;
+
+            // Mapeamento inteligente de colunas
+            results.data.forEach((row: any) => {
+                try {
+                    // Busca colunas por nomes comuns (case insensitive)
+                    const keys = Object.keys(row);
+                    const findKey = (search: string[]) => keys.find(k => search.some(s => k.toLowerCase().includes(s)));
+
+                    const dateKey = findKey(['data', 'date', 'dia']);
+                    const descKey = findKey(['desc', 'histórico', 'motivo']);
+                    const amountKey = findKey(['valor', 'amount', 'preço', 'quantia']);
+                    const catKey = findKey(['cat', 'classificação']);
+                    const typeKey = findKey(['tipo', 'type', 'oper']); // Entrada/Saída
+
+                    if (!dateKey || !amountKey) {
+                        errorCount++;
+                        return; 
+                    }
+
+                    const rawAmount = row[amountKey];
+                    let amount = typeof rawAmount === 'number' ? rawAmount : parseCurrencyBR(rawAmount);
+                    let type: 'income' | 'expense' = 'income';
+
+                    // Lógica para determinar Tipo (Entrada/Saída)
+                    if (typeKey) {
+                        const val = row[typeKey].toLowerCase();
+                        if (val.includes('saída') || val.includes('despesa') || val.includes('expense') || val.includes('débito')) type = 'expense';
+                    } else {
+                        // Se não tem coluna tipo, tenta ver se o valor é negativo
+                        if (amount < 0) {
+                            type = 'expense';
+                            amount = Math.abs(amount);
+                        }
+                    }
+
+                    const tx = {
+                        date: parseDateBR(row[dateKey]),
+                        description: descKey ? row[descKey] : 'Importado via CSV',
+                        amount: amount,
+                        category: catKey ? row[catKey] : 'Outros',
+                        type: type,
+                        paymentMethod: 'Outros'
+                    };
+
+                    if (tx.amount > 0) importedTransactions.push(tx);
+                } catch (err) {
+                    errorCount++;
+                }
+            });
+
+            if (importedTransactions.length > 0) {
+                if (confirm(`${importedTransactions.length} lançamentos identificados. ${errorCount > 0 ? `(${errorCount} linhas ignoradas/erro).` : ''} Deseja importar?`)) {
+                    setIsSaving(true);
+                    try {
+                        if (isConfigured) {
+                            const { error } = await supabase.from('transactions').insert(importedTransactions);
+                            if (error) throw error;
+                            // Recarrega tudo ou adiciona ao estado local
+                            const { data } = await supabase.from('transactions').select('*').order('date', {ascending: false});
+                            if (data) setTransactions(data as Transaction[]);
+                        } else {
+                            // Offline mode
+                            const newTxs = importedTransactions.map(t => ({...t, id: Math.random().toString(36).substr(2,9)}));
+                            setTransactions([...newTxs as Transaction[], ...transactions]);
+                        }
+                        setShowImportModal(false);
+                        alert("Importação concluída com sucesso!");
+                    } catch (e: any) {
+                        alert("Erro ao salvar no banco: " + e.message);
+                    } finally {
+                        setIsSaving(false);
+                    }
+                }
+            } else {
+                alert("Não foi possível identificar lançamentos válidos no arquivo. Verifique se as colunas 'Data' e 'Valor' existem.");
+            }
+        }
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 border-b border-transparent flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 border-b border-transparent flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tesouraria</h1>
           <p className="text-slate-500 dark:text-slate-400">Controle financeiro e lançamentos.</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all">
-            <Plus className="w-5 h-5" /> Lançar Novo
-        </button>
+        
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+             <button 
+                onClick={handleExportPDF} 
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+                title="Baixar Relatório em PDF"
+            >
+                <FileDown className="w-5 h-5" /> <span className="hidden sm:inline">Exportar PDF</span>
+            </button>
+
+            <button 
+                onClick={() => setShowImportModal(true)} 
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+                title="Importar de Excel/CSV"
+            >
+                <Upload className="w-5 h-5" /> <span className="hidden sm:inline">Importar</span>
+            </button>
+
+            <button 
+                onClick={() => setShowModal(true)} 
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all"
+            >
+                <Plus className="w-5 h-5" /> Lançar Novo
+            </button>
+        </div>
       </div>
 
       {/* Cards de Resumo */}
@@ -503,6 +649,52 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                     </div>
                 </form>
             </div>
+          </div>
+      )}
+
+      {/* MODAL IMPORTAÇÃO CSV */}
+      {showImportModal && (
+          <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                          <Upload className="w-6 h-6 text-blue-600" /> Importar Dados
+                      </h3>
+                      <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
+                  </div>
+
+                  <div className="space-y-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
+                          <h4 className="font-bold mb-2 flex items-center gap-1"><AlertCircle className="w-4 h-4"/> Instruções</h4>
+                          <ul className="list-disc list-inside space-y-1 opacity-90">
+                              <li>O arquivo deve ser formato <b>.csv</b></li>
+                              <li>Colunas sugeridas: <b>Data, Descrição, Valor, Categoria, Tipo</b></li>
+                              <li>O sistema tenta detectar colunas automaticamente.</li>
+                              <li>Datas no formato: DD/MM/AAAA</li>
+                          </ul>
+                      </div>
+
+                      <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                          <p className="text-slate-600 dark:text-slate-300 font-medium">Clique para selecionar o arquivo</p>
+                          <p className="text-xs text-slate-400 mt-1">Planilhas do Excel ou Google Sheets (Salvar como .csv)</p>
+                          <input 
+                              type="file" 
+                              accept=".csv"
+                              ref={fileInputRef}
+                              className="hidden"
+                              onChange={handleFileUpload}
+                          />
+                      </div>
+                      
+                      {isSaving && (
+                          <div className="flex items-center justify-center gap-2 text-blue-600 font-medium py-2">
+                              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                              Processando importação...
+                          </div>
+                      )}
+                  </div>
+              </div>
           </div>
       )}
     </div>

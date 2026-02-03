@@ -50,6 +50,9 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
     }
   };
 
+  // Classe padrão para inputs
+  const inputClass = "w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500";
+
   return (
   <div className="space-y-8">
       
@@ -81,26 +84,26 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
-                  <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+                  <input type="text" className={inputClass} 
                       value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
-                  <input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+                  <input type="date" className={inputClass} 
                       value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
               </div>
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CPF</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />
+                  <input className={inputClass} value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RG</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
+                  <input className={inputClass} value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado Civil</label>
-                   <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.maritalStatus || 'Solteiro(a)'} onChange={e => onChange('maritalStatus', e.target.value)}>
+                   <select className={inputClass} value={data.maritalStatus || 'Solteiro(a)'} onChange={e => onChange('maritalStatus', e.target.value)}>
                       <option value="Solteiro(a)">Solteiro(a)</option>
                       <option value="Casado(a)">Casado(a)</option>
                       <option value="Viúvo(a)">Viúvo(a)</option>
@@ -110,15 +113,15 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
+                  <input className={inputClass} value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
               </div>
               <div className="md:col-span-5">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
+                  <input className={inputClass} value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
               </div>
               <div className="md:col-span-3">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
-                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
+                  <select className={inputClass} value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
                      <option value="">Selecione</option>
                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
@@ -128,7 +131,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Profissão</label>
                   <div className="relative">
                       <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                      <input className="w-full pl-9 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
+                      <input className={`${inputClass} pl-9`} value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
                   </div>
               </div>
           </div>
@@ -142,29 +145,29 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" />
+                  <input className={inputClass} value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" />
               </div>
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</label>
-                  <input type="email" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
+                  <input type="email" className={inputClass} value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
               </div>
               
               <div className="md:col-span-3">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CEP</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} />
+                  <input className={inputClass} value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} />
               </div>
               <div className="md:col-span-9">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
+                  <input className={inputClass} value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
               </div>
               
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade</label>
-                  <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
+                  <input className={inputClass} value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado (UF)</label>
-                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
+                  <select className={inputClass} value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
                      <option value="">Selecione</option>
                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
@@ -185,7 +188,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                       <input 
                         type="text" 
                         autoFocus
-                        className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white"
+                        className={`${inputClass} flex-1`}
                         placeholder="Nome da nova congregação"
                         value={newCongregationName}
                         onChange={e => setNewCongregationName(e.target.value)}
@@ -195,7 +198,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                     </div>
                  ) : (
                     <div className="flex gap-2">
-                      <select className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.congregation || 'Sede'} onChange={e => onChange('congregation', e.target.value)}>
+                      <select className={`${inputClass} flex-1`} value={data.congregation || 'Sede'} onChange={e => onChange('congregation', e.target.value)}>
                           {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Congregação"><Plus className="w-4 h-4"/></button>
@@ -205,7 +208,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
               <div className="md:col-span-3">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cargo / Função</label>
-                 <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
+                 <select className={inputClass} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
                     <option value="Membro">Membro</option>
                     <option value="Cooperador">Cooperador</option>
                     <option value="Diácono">Diácono</option>
@@ -218,7 +221,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
               </div>
               <div className="md:col-span-3">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Situação (Status)</label>
-                 <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
+                 <select className={inputClass} value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
                     <option value="Ativo">Ativo</option>
                     <option value="Inativo">Inativo</option>
                     <option value="Visitante">Visitante</option>
@@ -228,24 +231,24 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
               <div className="md:col-span-6">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ministério / Departamento</label>
-                 <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil, Jovens" />
+                 <input className={inputClass} value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil, Jovens" />
               </div>
               <div className="md:col-span-6">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
-                 <input className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
+                 <input className={inputClass} value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
               </div>
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Admissão</label>
-                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
+                  <input type="date" className={inputClass} value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Droplet className="w-3 h-3 text-blue-500"/> Batismo nas Águas</label>
-                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
+                  <input type="date" className={inputClass} value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-500"/> Batismo Espírito Santo</label>
-                  <input type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 dark:bg-slate-700 dark:text-white" value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
+                  <input type="date" className={inputClass} value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
               </div>
           </div>
       </section>
@@ -377,6 +380,9 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     }
   };
 
+  // Classe padrão para inputs nos modais
+  const modalInputClass = "w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500";
+
   return (
     <div className="space-y-6">
       <div className="sticky top-0 md:top-[74px] z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm pb-4 pt-2 -mx-6 px-6 md:-mx-8 md:px-8 mb-4 border-b border-transparent flex justify-between items-center">
@@ -454,7 +460,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             <form onSubmit={handleSaveMember} className="overflow-y-auto p-8">
                <MemberFormContent data={currentMember} onChange={(f: any, v: any) => setCurrentMember(prev => ({...prev, [f]: v}))} isAdmin={true} availableCongregations={congregations} onAddCongregation={(name: string) => setCongregations([...congregations, name])} />
                <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl border-slate-300 dark:border-slate-600 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700">Cancelar</button>
+                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-600">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none font-medium">
                       {isSaving ? 'Salvando...' : 'Salvar Membro'}
                   </button>
@@ -479,7 +485,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                  <div className="space-y-4">
                      <div>
                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Membro</label>
-                         <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-medium text-slate-700 dark:text-slate-200">
+                         <div className="p-3 bg-white border border-slate-200 dark:bg-slate-700 dark:border-slate-600 rounded-lg font-medium text-slate-700 dark:text-slate-200">
                              {selectedMemberForCert?.name}
                          </div>
                      </div>
@@ -487,7 +493,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                      <div>
                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Certificado</label>
                          <select 
-                            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 dark:bg-slate-700 dark:text-white"
+                            className={modalInputClass}
                             value={certType}
                             onChange={e => setCertType(e.target.value)}
                          >
@@ -503,7 +509,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                      <div>
                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Texto do Certificado / Observação</label>
                          <textarea 
-                            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 dark:bg-slate-700 dark:text-white"
+                            className={modalInputClass}
                             rows={4}
                             value={certDesc}
                             onChange={e => setCertDesc(e.target.value)}
