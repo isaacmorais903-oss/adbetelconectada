@@ -16,12 +16,14 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.12.2",
-    "jspdf": "^2.5.1"
+    "jspdf": "^2.5.1",
+    "papaparse": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
+    "@types/papaparse": "^5.3.14",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.6"

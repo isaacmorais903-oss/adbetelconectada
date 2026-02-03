@@ -206,7 +206,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
     Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: async (results) => {
+        complete: async (results: any) => {
             const importedTransactions: any[] = [];
             let errorCount = 0;
 
