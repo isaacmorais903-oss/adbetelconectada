@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
 
@@ -17,6 +17,18 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onToggleRole, isDarkMode, onToggleTheme, privacyMode, onTogglePrivacy }) => {
   const [imgError, setImgError] = useState(false);
+  const [socialLinks, setSocialLinks] = useState({ instagram: '', facebook: '', youtube: '' });
+
+  // Update social links from local storage periodically or on mount
+  useEffect(() => {
+    const loadLinks = () => {
+        const saved = localStorage.getItem('church_social_links');
+        if (saved) setSocialLinks(JSON.parse(saved));
+    };
+    loadLinks();
+    window.addEventListener('storage', loadLinks);
+    return () => window.removeEventListener('storage', loadLinks);
+  }, []);
   
   // Define menu items based on Role
   const navItems = userRole === 'admin' 
@@ -88,6 +100,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
 
       <div className="p-4 border-t border-slate-800 space-y-4 bg-slate-900 dark:bg-slate-950">
         
+        {/* Social Icons Mini */}
+        {(socialLinks.instagram || socialLinks.facebook || socialLinks.youtube) && (
+            <div className="flex justify-center gap-4 pb-2">
+                {socialLinks.instagram && <a href={socialLinks.instagram} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-pink-500 transition-colors"><Instagram className="w-5 h-5"/></a>}
+                {socialLinks.facebook && <a href={socialLinks.facebook} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors"><Facebook className="w-5 h-5"/></a>}
+                {socialLinks.youtube && <a href={socialLinks.youtube} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-red-500 transition-colors"><Youtube className="w-5 h-5"/></a>}
+            </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2">
             <button 
                 onClick={onToggleTheme}

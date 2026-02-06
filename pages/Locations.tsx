@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload } from 'lucide-react';
+import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon } from 'lucide-react';
 import { Location } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
@@ -28,7 +28,8 @@ export const Locations: React.FC = () => {
       type: 'Congregação',
       city: 'São Paulo - SP',
       serviceTimes: 'Dom: 19h | Qui: 20h',
-      imageUrl: ''
+      imageUrl: '',
+      mapUrl: ''
   });
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export const Locations: React.FC = () => {
                setLocations([...locations, loc]);
           }
           setShowModal(false);
-          setNewLocation({ type: 'Congregação', city: 'São Paulo - SP', serviceTimes: '', name: '', address: '', imageUrl: '' });
+          setNewLocation({ type: 'Congregação', city: 'São Paulo - SP', serviceTimes: '', name: '', address: '', imageUrl: '', mapUrl: '' });
       } catch (error) {
           alert('Erro ao salvar local.');
       } finally {
@@ -215,6 +216,20 @@ export const Locations: React.FC = () => {
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Horários de Culto</label>
                           <input type="text" className={inputClass} required value={newLocation.serviceTimes || ''} onChange={e => setNewLocation({...newLocation, serviceTimes: e.target.value})} placeholder="Dom: 19h | Qua: 20h" />
+                      </div>
+
+                      <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+                              <LinkIcon className="w-3 h-3" /> Link do Google Maps (Opcional)
+                          </label>
+                          <input 
+                            type="text" 
+                            className={inputClass} 
+                            value={newLocation.mapUrl || ''} 
+                            onChange={e => setNewLocation({...newLocation, mapUrl: e.target.value})} 
+                            placeholder="https://maps.app.goo.gl/..." 
+                          />
+                          <p className="text-[10px] text-slate-400 mt-1">Se deixar em branco, o sistema gera um link de busca automático com o endereço.</p>
                       </div>
                       
                       <div className="flex gap-3 mt-6 pt-2">
