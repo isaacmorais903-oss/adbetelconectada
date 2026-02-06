@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Acesso seguro às variáveis de ambiente
@@ -14,6 +15,9 @@ export const isConfigured =
 
 if (!isConfigured) {
   console.warn("ATENÇÃO: Chaves do Supabase não encontradas. O App rodará em modo de DEMONSTRAÇÃO (Offline).");
+} else {
+  // Check de segurança (Log para desenvolvedor)
+  console.log("Supabase Conectado. Certifique-se de ter rodado o script 'SUPABASE_SETUP.sql' no painel do Supabase para habilitar a segurança RLS.");
 }
 
 export const supabase = createClient(
