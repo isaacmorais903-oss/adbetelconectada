@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
 import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
@@ -16,6 +16,21 @@ const maskData = (value: string | undefined, type: any, isPrivacyActive: boolean
     if (!isPrivacyActive) return value;
     if (type === 'email') return `${value.split('@')[0].substring(0, 2)}***@${value.split('@')[1]}`;
     return '********';
+};
+
+// Extrai o código diretamente da string da congregação (ex: "002 - Jardim" -> "002")
+const getCongregationCode = (congregationName: string) => {
+    if (!congregationName) return '999';
+    
+    // Tenta encontrar o padrão "001 - Nome" no início da string
+    const match = congregationName.match(/^(\d{3})/);
+    if (match) return match[1];
+    
+    // Fallback para legado ou Sede sem número
+    const name = congregationName.toLowerCase();
+    if (name.includes('sede')) return '001';
+    
+    return '999'; // Código genérico se não seguir o padrão
 };
 
 interface MemberFormContentProps {
@@ -43,8 +58,24 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
   const handleSaveCongregation = () => {
     if(newCongregationName.trim()) {
-      onAddCongregation(newCongregationName);
-      onChange('congregation', newCongregationName);
+      // Lógica para gerar o próximo número sequencial
+      // 1. Extrai todos os números existentes (ex: "001 - Sede" -> 1)
+      const existingNumbers = availableCongregations
+        .map(c => parseInt(c.split(' - ')[0]))
+        .filter(n => !isNaN(n));
+      
+      // 2. Pega o maior número e soma 1. Se não houver nenhum, começa do 2 (pois 1 é Sede)
+      const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 1;
+      const nextNum = maxNum + 1;
+      
+      // 3. Formata para 3 dígitos: "002"
+      const formattedNum = nextNum.toString().padStart(3, '0');
+      
+      // 4. Cria o nome final: "002 - Nova Congregação"
+      const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
+
+      onAddCongregation(finalName);
+      onChange('congregation', finalName);
       setNewCongregationName('');
       setIsAddingCongregation(false);
     }
@@ -73,7 +104,12 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                 <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </label>
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 font-medium">Foto do Membro</p>
+        {data.code && (
+            <div className="mt-3 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-xs font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                Cód: {data.code}
+            </div>
+        )}
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Foto do Membro</p>
       </div>
 
       {/* 1. INFORMAÇÕES PESSOAIS */}
@@ -189,21 +225,22 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                         type="text" 
                         autoFocus
                         className={`${inputClass} flex-1`}
-                        placeholder="Nome da nova congregação"
+                        placeholder="Nome (ex: Jardim Esperança)"
                         value={newCongregationName}
                         onChange={e => setNewCongregationName(e.target.value)}
                       />
-                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"><CheckCircle className="w-4 h-4"/></button>
-                      <button type="button" onClick={() => setIsAddingCongregation(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><X className="w-4 h-4"/></button>
+                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
+                      <button type="button" onClick={() => setIsAddingCongregation(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
                     </div>
                  ) : (
                     <div className="flex gap-2">
-                      <select className={`${inputClass} flex-1`} value={data.congregation || 'Sede'} onChange={e => onChange('congregation', e.target.value)}>
+                      <select className={`${inputClass} flex-1`} value={data.congregation || '001 - Sede'} onChange={e => onChange('congregation', e.target.value)}>
                           {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Congregação"><Plus className="w-4 h-4"/></button>
+                      <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Nova Congregação"><Plus className="w-4 h-4"/></button>
                     </div>
                  )}
+                 <p className="text-[10px] text-slate-400 mt-1">O sistema atribui numeração automática (001, 002...) para novas congregações.</p>
               </div>
 
               <div className="md:col-span-3">
@@ -267,7 +304,21 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentMember, setCurrentMember] = useState<Partial<Member>>({});
-  const [congregations, setCongregations] = useState<string[]>(['Sede', 'Congregação Jardim']);
+  
+  // LISTA DE CONGREGAÇÕES COM NUMERAÇÃO INICIAL
+  const [congregations, setCongregations] = useState<string[]>(['001 - Sede']);
+  
+  // Atualiza a lista de congregações baseado nos membros existentes para manter consistência da numeração
+  useEffect(() => {
+    if (members.length > 0) {
+        const uniqueCongregations = new Set(congregations);
+        members.forEach(m => {
+            if (m.congregation) uniqueCongregations.add(m.congregation);
+        });
+        setCongregations(Array.from(uniqueCongregations).sort());
+    }
+  }, [members]);
+
   const [isSaving, setIsSaving] = useState(false);
 
   // Certificate State
@@ -278,14 +329,16 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
 
   const filteredMembers = members.filter(member => 
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchTerm.toLowerCase())
+    member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (member.code && member.code.includes(searchTerm))
   );
 
   const openAddModal = () => {
     setIsEditing(false);
     setCurrentMember({
         name: '', email: '', role: 'Membro', status: MemberStatus.ACTIVE,
-        joinedAt: new Date().toISOString().split('T')[0], nationality: 'Brasileira', congregation: 'Sede'
+        joinedAt: new Date().toISOString().split('T')[0], nationality: 'Brasileira', 
+        congregation: '001 - Sede' // Padrão Sede
     });
     setShowAddModal(true);
   };
@@ -321,6 +374,26 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     setIsSaving(true);
 
     try {
+        // GERAÇÃO DO CÓDIGO DO MEMBRO (Ano.Congregação.Sequencia)
+        // Só gera se não tiver código e se tivermos as informações necessárias
+        if (!currentMember.code && currentMember.joinedAt && currentMember.congregation) {
+            const admissionYear = new Date(currentMember.joinedAt).getFullYear();
+            
+            // Extrai o código "001" da string "001 - Sede"
+            const congCode = getCongregationCode(currentMember.congregation);
+            
+            // Conta quantos membros existem nessa congregação nesse ano (para gerar sequência)
+            const existingInYearAndCong = members.filter(m => {
+                if(!m.joinedAt) return false;
+                const mYear = new Date(m.joinedAt).getFullYear();
+                const mCong = m.congregation || '001 - Sede';
+                return mYear === admissionYear && mCong === currentMember.congregation;
+            });
+            
+            const sequence = (existingInYearAndCong.length + 1).toString().padStart(3, '0');
+            currentMember.code = `${admissionYear}.${congCode}.${sequence}`;
+        }
+
         if (isConfigured) {
             // SUPABASE SAVE
             const payload = { ...currentMember };
@@ -399,7 +472,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="relative flex-1 max-w-md">
             <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            <input type="text" placeholder="Buscar por nome ou cargo..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
+            <input type="text" placeholder="Buscar por nome, cargo ou código..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
@@ -409,6 +482,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Membro</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Código</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Contato</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Ações</th>
@@ -427,6 +501,15 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                           <div className="text-xs text-slate-500">{member.role}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                      {member.code ? (
+                          <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                              {member.code}
+                          </span>
+                      ) : (
+                          <span className="text-xs text-slate-400 italic">--</span>
+                      )}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                       <div>{maskData(member.email, 'email', privacyMode)}</div>

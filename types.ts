@@ -1,5 +1,4 @@
 
-
 export type UserRole = 'admin' | 'member';
 
 export enum MemberStatus {
@@ -10,6 +9,8 @@ export enum MemberStatus {
 
 export interface Member {
   id: string;
+  code?: string; // Novo campo: 2026.001.001 (Ano.Sede.Sequencia)
+  
   // 1. Informações Pessoais
   name: string;
   birthDate?: string;

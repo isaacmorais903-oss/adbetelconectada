@@ -9,6 +9,7 @@
 -- Tabela de Membros
 CREATE TABLE IF NOT EXISTS members (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  code TEXT, -- Campo adicionado para numeração (Ano.Congregacao.Sequencia)
   name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
@@ -104,6 +105,15 @@ CREATE TABLE IF NOT EXISTS prayer_requests (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ATUALIZAÇÃO SEGURA: Adiciona coluna code se não existir (para quem já rodou o script antes)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='code') THEN
+        ALTER TABLE members ADD COLUMN code TEXT;
+    END IF;
+END
+$$;
+
 -- ============================================================================
 -- 2. SEGURANÇA (ROW LEVEL SECURITY - RLS)
 -- Isso impede que hackers leiam ou apaguem dados usando sua chave pública.
@@ -194,4 +204,3 @@ USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 CREATE POLICY "Admin apaga oracoes" ON prayer_requests 
 FOR DELETE TO authenticated 
 USING (auth.jwt() ->> 'email' ILIKE '%admin%');
-

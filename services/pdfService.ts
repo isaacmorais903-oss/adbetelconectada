@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import { Member, Transaction } from "../types";
 
@@ -106,13 +107,17 @@ export const generateMembershipCard = async (member: Member) => {
     doc.setFontSize(9);
     doc.text(new Date(member.joinedAt).toLocaleDateString('pt-BR'), 28, 37);
 
-    // ID
+    // CÓDIGO DO MEMBRO (Numeração nova)
     doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
-    doc.text("ID DE MEMBRO", 60, 33);
+    doc.text("CÓDIGO / MATRÍCULA", 60, 33);
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
-    doc.text(`#${member.id.padStart(6, '0')}`, 60, 37);
+    doc.setFontSize(10); // Um pouco maior para destaque
+    doc.setFont("courier", "bold"); // Fonte monoespaçada para números
+    
+    // Usa o novo código se existir, senão usa ID formatado como fallback
+    const codeDisplay = member.code || `#${member.id.substring(0,6)}`;
+    doc.text(codeDisplay, 60, 37);
 
     doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
 
@@ -172,12 +177,20 @@ export const generateCertificate = async (member: Member, type: string, descript
     doc.setFontSize(32);
     doc.setTextColor(0, 0, 0);
     doc.text(member.name, width / 2, 110, { align: "center" });
+    
+    // Exibe o código abaixo do nome no certificado também
+    if(member.code) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Matrícula: ${member.code}`, width / 2, 120, { align: "center" });
+    }
 
     doc.setFont("times", "normal");
     doc.setFontSize(16);
     doc.setTextColor(80, 80, 80);
     const descSplit = doc.splitTextToSize(description, 200);
-    doc.text(descSplit, width / 2, 130, { align: "center" });
+    doc.text(descSplit, width / 2, 135, { align: "center" });
 
     const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
     doc.setFontSize(14);

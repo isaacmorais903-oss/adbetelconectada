@@ -19,7 +19,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [userRole, setUserRole] = useState<UserRole>('admin'); 
+  const [userRole, setUserRole] = useState<UserRole>('member'); // Default to member for safety
   const [isLoadingData, setIsLoadingData] = useState(false);
   
   // Data State
@@ -38,25 +38,37 @@ const App: React.FC = () => {
 
   // 1. Auth Effect
   useEffect(() => {
-    // Correção TS: Tipagem explícita para a resposta do getSession
+    // Check initial session
     supabase.auth.getSession().then(({ data }: { data: { session: any } }) => {
-      setSession(data.session);
-      setIsAuthenticated(!!data.session);
+      if (data.session) {
+          handleSessionSuccess(data.session);
+      }
     });
 
-    // Correção TS: Tipagem explícita para _event e session
+    // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      setSession(session);
-      setIsAuthenticated(!!session);
       if (session) {
-         setUserRole('admin');
-         // Se conectou, carrega os dados
-         fetchData();
+         handleSessionSuccess(session);
+      } else {
+         setIsAuthenticated(false);
+         setSession(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleSessionSuccess = (session: any) => {
+      setSession(session);
+      setIsAuthenticated(true);
+      
+      // Determine Role based on Email (Simple logic for this version)
+      const email = session.user?.email || '';
+      const role = email.toLowerCase().includes('admin') ? 'admin' : 'member';
+      setUserRole(role);
+      
+      fetchData();
+  };
 
   // 2. Data Fetching Effect (Supabase)
   const fetchData = async () => {
@@ -68,7 +80,8 @@ const App: React.FC = () => {
         const { data: membersData } = await supabase.from('members').select('*').order('name');
         if (membersData) setMembers(membersData);
 
-        // Carrega Financeiro
+        // Carrega Financeiro (Se for admin ou se precisarmos exibir algo específico)
+        // Nota: RLS no banco já protege, mas evitamos requisição desnecessária
         const { data: financeData } = await supabase.from('transactions').select('*').order('date', { ascending: false });
         if (financeData) setTransactions(financeData);
 
@@ -106,25 +119,31 @@ const App: React.FC = () => {
   const handleRestore = () => { alert("Funcionalidade de Restore em breve."); };
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  const toggleRole = () => { setUserRole(prev => prev === 'admin' ? 'member' : 'admin'); setCurrentView('dashboard'); };
+  
+  // Toggle Role (Apenas visual, para teste rápido em dev, ou admin mudar view)
+  const toggleRole = () => { 
+      setUserRole(prev => prev === 'admin' ? 'member' : 'admin'); 
+      setCurrentView('dashboard'); 
+  };
+  
   const togglePrivacy = () => setPrivacyMode(!privacyMode);
 
+  // Manual Login Handler (usado pelo componente Login, principalmente para modo Demo)
   const handleLogin = (role: UserRole) => {
     setUserRole(role);
-    // Em modo demo (sem supabase), isAuthenticated é setado manualmente aqui se necessário, 
-    // mas idealmente o onAuthStateChange cuida disso.
     if (!isConfigured) {
         setIsAuthenticated(true);
         // Load fake data for demo
         setMembers([
-            { id: '1', name: 'Carlos Demo', role: 'Membro', email: 'carlos@demo.com', phone: '11999999999', status: 'Ativo', joinedAt: '2023-01-01' } as any
+            { id: '1', name: 'Carlos Demo', role: 'Membro', email: 'carlos@demo.com', phone: '11999999999', status: 'Ativo', joinedAt: '2023-01-01', congregation: '001 - Sede' } as any
         ]);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if(isConfigured) await supabase.auth.signOut();
     setIsAuthenticated(false);
+    setSession(null);
     setCurrentView('dashboard');
     setMembers([]);
     setTransactions([]);
@@ -184,10 +203,10 @@ const App: React.FC = () => {
            <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center border border-white/30">
-                    <span className="font-bold text-lg">{userRole === 'admin' ? 'PR' : 'CS'}</span>
+                    <span className="font-bold text-lg">{userRole === 'admin' ? 'AD' : 'MB'}</span>
                  </div>
-                 <div>
-                    <h1 className="font-bold text-lg leading-tight">Olá, {userRole === 'admin' ? 'Pr. Admin' : 'Membro'}</h1>
+                 <div className="overflow-hidden">
+                    <h1 className="font-bold text-lg leading-tight truncate max-w-[150px]">{session?.user?.email?.split('@')[0] || (userRole === 'admin' ? 'Admin' : 'Membro')}</h1>
                     <p className="text-xs text-slate-300">{userRole === 'admin' ? 'Painel Administrativo' : 'Área do Membro'}</p>
                  </div>
               </div>
@@ -223,11 +242,11 @@ const App: React.FC = () => {
              <div className="relative"><Bell className="w-6 h-6 text-slate-400" /><span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span></div>
              <div className="flex items-center gap-3 pl-5 border-l border-slate-100 dark:border-slate-700">
                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{session?.user?.email || 'Usuário'}</p>
-                  <p className="text-xs text-slate-400">{userRole === 'admin' ? 'Administrador' : 'Membro'}</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 max-w-[150px] truncate">{session?.user?.email || (userRole === 'admin' ? 'Administrador' : 'Membro')}</p>
+                  <p className="text-xs text-slate-400">{userRole === 'admin' ? 'Gestão Total' : 'Acesso Limitado'}</p>
                </div>
-               <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                 {userRole === 'admin' ? 'PR' : 'MB'}
+               <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${userRole === 'admin' ? 'bg-blue-600' : 'bg-emerald-600'}`}>
+                 {userRole === 'admin' ? 'AD' : 'MB'}
                </div>
                <button onClick={handleLogout} className="ml-2 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><LogOut className="w-5 h-5" /></button>
              </div>
