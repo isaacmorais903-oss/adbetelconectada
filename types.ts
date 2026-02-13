@@ -101,3 +101,10 @@ export interface InventoryItem {
 }
 
 export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory';
+
+export interface ChurchSettings {
+    id?: string;
+    instagram_url?: string;
+    facebook_url?: string;
+    youtube_url?: string;
+}

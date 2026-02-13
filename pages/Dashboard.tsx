@@ -3,7 +3,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight, Save, Upload, FileSpreadsheet, Share2, Facebook, Instagram, ExternalLink, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { StatsCard } from '../components/StatsCard';
-import { UserRole, View } from '../types';
+import { UserRole, View, ChurchSettings } from '../types';
+import { supabase, isConfigured } from '../services/supabaseClient';
 
 interface DashboardProps {
   userRole: UserRole;
@@ -25,35 +26,93 @@ const data = [
 export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, onBackup, onExportCSV, onRestore }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSocialModal, setShowSocialModal] = useState(false);
-  const [socialLinks, setSocialLinks] = useState({
-      instagram: '',
-      facebook: '',
-      youtube: ''
+  const [socialLinks, setSocialLinks] = useState<ChurchSettings>({
+      instagram_url: '',
+      facebook_url: '',
+      youtube_url: ''
   });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-  // Carregar links salvos (Simulação via LocalStorage para persistência imediata)
+  // Carregar configurações do Supabase (e fallback LocalStorage)
   useEffect(() => {
-      const savedLinks = localStorage.getItem('church_social_links');
-      if (savedLinks) {
-          setSocialLinks(JSON.parse(savedLinks));
-      }
+    const loadSettings = async () => {
+        // Tenta carregar do LocalStorage primeiro para exibir rápido
+        const savedLocal = localStorage.getItem('church_social_links');
+        if (savedLocal) {
+            const parsed = JSON.parse(savedLocal);
+            // Mapeia formato antigo para novo se necessário
+            setSocialLinks({
+                instagram_url: parsed.instagram || parsed.instagram_url || '',
+                facebook_url: parsed.facebook || parsed.facebook_url || '',
+                youtube_url: parsed.youtube || parsed.youtube_url || ''
+            });
+        }
+
+        if (isConfigured) {
+            try {
+                const { data, error } = await supabase.from('church_settings').select('*').single();
+                if (data) {
+                    setSocialLinks(data);
+                    // Atualiza localStorage para manter sincronia com Sidebar
+                    localStorage.setItem('church_social_links', JSON.stringify({
+                        instagram: data.instagram_url,
+                        facebook: data.facebook_url,
+                        youtube: data.youtube_url
+                    }));
+                    window.dispatchEvent(new Event('storage'));
+                }
+            } catch (err) {
+                // Tabela pode estar vazia ou erro de conexão, ignora silenciosamente
+            }
+        }
+    };
+    loadSettings();
   }, []);
 
-  const handleSaveSocial = (e: React.FormEvent) => {
+  const handleSaveSocial = async (e: React.FormEvent) => {
       e.preventDefault();
-      localStorage.setItem('church_social_links', JSON.stringify(socialLinks));
-      setShowSocialModal(false);
-      // Dispara evento para atualizar sidebar se necessário
-      window.dispatchEvent(new Event('storage'));
-      alert('Redes sociais atualizadas com sucesso!');
+      setIsSavingSettings(true);
+      
+      try {
+          // 1. Salva no Supabase se conectado
+          if (isConfigured) {
+              const payload = { ...socialLinks };
+              // Se já tem ID, faz update, senão insert (mas como usamos .single() na leitura, ideal é ter apenas 1 linha)
+              // Vamos verificar se já existe registro
+              const { data: existing } = await supabase.from('church_settings').select('id').single();
+              
+              if (existing) {
+                  await supabase.from('church_settings').update(payload).eq('id', existing.id);
+              } else {
+                  await supabase.from('church_settings').insert(payload);
+              }
+          }
+
+          // 2. Salva no LocalStorage (para Sidebar e offline)
+          localStorage.setItem('church_social_links', JSON.stringify({
+              instagram: socialLinks.instagram_url,
+              facebook: socialLinks.facebook_url,
+              youtube: socialLinks.youtube_url
+          }));
+          
+          // Dispara evento para atualizar sidebar instantaneamente
+          window.dispatchEvent(new Event('storage'));
+          
+          setShowSocialModal(false);
+          alert('Redes sociais atualizadas com sucesso!');
+
+      } catch (error) {
+          console.error("Erro ao salvar config:", error);
+          alert("Erro ao salvar configurações.");
+      } finally {
+          setIsSavingSettings(false);
+      }
   };
 
-  // Componente de Redes Sociais (Redesign Discreto)
+  // Componente de Redes Sociais
   const SocialMediaSection = () => {
-      // Verifica se existe algum link configurado
-      const hasAnyLink = socialLinks.instagram || socialLinks.facebook || socialLinks.youtube;
+      const hasAnyLink = socialLinks.instagram_url || socialLinks.facebook_url || socialLinks.youtube_url;
       
-      // Se não tiver link e não for admin, não mostra nada (para não poluir a tela do membro)
       if (!hasAnyLink && userRole !== 'admin') return null;
 
       return (
@@ -63,71 +122,71 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             </h3>
             <div className="flex flex-wrap gap-3">
                 {/* Instagram */}
-                {(socialLinks.instagram || userRole === 'admin') && (
+                {(socialLinks.instagram_url || userRole === 'admin') && (
                     <a 
-                        href={socialLinks.instagram || '#'} 
+                        href={socialLinks.instagram_url || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        onClick={(e) => !socialLinks.instagram && e.preventDefault()}
+                        onClick={(e) => !socialLinks.instagram_url && e.preventDefault()}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 group
-                            ${socialLinks.instagram 
+                            ${socialLinks.instagram_url 
                                 ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-pink-500/50 hover:shadow-sm cursor-pointer' 
                                 : 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 opacity-60 cursor-default'
                             }`}
                     >
-                        <div className={`p-1.5 rounded-full ${socialLinks.instagram ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' : 'bg-slate-200 text-slate-500'}`}>
+                        <div className={`p-1.5 rounded-full ${socialLinks.instagram_url ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' : 'bg-slate-200 text-slate-500'}`}>
                             <Instagram className="w-4 h-4" />
                         </div>
-                        <span className={`text-sm font-semibold ${socialLinks.instagram ? 'text-slate-700 dark:text-slate-200 group-hover:text-pink-600 dark:group-hover:text-pink-400' : 'text-slate-400'}`}>
+                        <span className={`text-sm font-semibold ${socialLinks.instagram_url ? 'text-slate-700 dark:text-slate-200 group-hover:text-pink-600 dark:group-hover:text-pink-400' : 'text-slate-400'}`}>
                             Instagram
                         </span>
-                        {socialLinks.instagram && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-pink-400 ml-1" />}
+                        {socialLinks.instagram_url && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-pink-400 ml-1" />}
                     </a>
                 )}
 
                 {/* Facebook */}
-                {(socialLinks.facebook || userRole === 'admin') && (
+                {(socialLinks.facebook_url || userRole === 'admin') && (
                     <a 
-                        href={socialLinks.facebook || '#'} 
+                        href={socialLinks.facebook_url || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        onClick={(e) => !socialLinks.facebook && e.preventDefault()}
+                        onClick={(e) => !socialLinks.facebook_url && e.preventDefault()}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 group
-                            ${socialLinks.facebook 
+                            ${socialLinks.facebook_url 
                                 ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-500/50 hover:shadow-sm cursor-pointer' 
                                 : 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 opacity-60 cursor-default'
                             }`}
                     >
-                        <div className={`p-1.5 rounded-full ${socialLinks.facebook ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-slate-200 text-slate-500'}`}>
+                        <div className={`p-1.5 rounded-full ${socialLinks.facebook_url ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-slate-200 text-slate-500'}`}>
                             <Facebook className="w-4 h-4" />
                         </div>
-                        <span className={`text-sm font-semibold ${socialLinks.facebook ? 'text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'text-slate-400'}`}>
+                        <span className={`text-sm font-semibold ${socialLinks.facebook_url ? 'text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'text-slate-400'}`}>
                             Facebook
                         </span>
-                        {socialLinks.facebook && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-blue-400 ml-1" />}
+                        {socialLinks.facebook_url && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-blue-400 ml-1" />}
                     </a>
                 )}
 
                 {/* YouTube */}
-                {(socialLinks.youtube || userRole === 'admin') && (
+                {(socialLinks.youtube_url || userRole === 'admin') && (
                     <a 
-                        href={socialLinks.youtube || '#'} 
+                        href={socialLinks.youtube_url || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        onClick={(e) => !socialLinks.youtube && e.preventDefault()}
+                        onClick={(e) => !socialLinks.youtube_url && e.preventDefault()}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 group
-                            ${socialLinks.youtube 
+                            ${socialLinks.youtube_url 
                                 ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-red-500/50 hover:shadow-sm cursor-pointer' 
                                 : 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 opacity-60 cursor-default'
                             }`}
                     >
-                        <div className={`p-1.5 rounded-full ${socialLinks.youtube ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-slate-200 text-slate-500'}`}>
+                        <div className={`p-1.5 rounded-full ${socialLinks.youtube_url ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-slate-200 text-slate-500'}`}>
                             <Youtube className="w-4 h-4" />
                         </div>
-                        <span className={`text-sm font-semibold ${socialLinks.youtube ? 'text-slate-700 dark:text-slate-200 group-hover:text-red-600 dark:group-hover:text-red-400' : 'text-slate-400'}`}>
+                        <span className={`text-sm font-semibold ${socialLinks.youtube_url ? 'text-slate-700 dark:text-slate-200 group-hover:text-red-600 dark:group-hover:text-red-400' : 'text-slate-400'}`}>
                             YouTube
                         </span>
-                        {socialLinks.youtube && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-red-400 ml-1" />}
+                        {socialLinks.youtube_url && <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-red-400 ml-1" />}
                     </a>
                 )}
             </div>
@@ -305,8 +364,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                                 type="url" 
                                 placeholder="https://instagram.com/suaigreja" 
                                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-                                value={socialLinks.instagram}
-                                onChange={e => setSocialLinks({...socialLinks, instagram: e.target.value})}
+                                value={socialLinks.instagram_url || ''}
+                                onChange={e => setSocialLinks({...socialLinks, instagram_url: e.target.value})}
                             />
                         </div>
                         <div className="space-y-1">
@@ -315,8 +374,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                                 type="url" 
                                 placeholder="https://facebook.com/suaigreja" 
                                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                value={socialLinks.facebook}
-                                onChange={e => setSocialLinks({...socialLinks, facebook: e.target.value})}
+                                value={socialLinks.facebook_url || ''}
+                                onChange={e => setSocialLinks({...socialLinks, facebook_url: e.target.value})}
                             />
                         </div>
                         <div className="space-y-1">
@@ -325,12 +384,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                                 type="url" 
                                 placeholder="https://youtube.com/c/suaigreja" 
                                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500"
-                                value={socialLinks.youtube}
-                                onChange={e => setSocialLinks({...socialLinks, youtube: e.target.value})}
+                                value={socialLinks.youtube_url || ''}
+                                onChange={e => setSocialLinks({...socialLinks, youtube_url: e.target.value})}
                             />
                         </div>
                         <div className="pt-4">
-                            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none">Salvar Links</button>
+                            <button type="submit" disabled={isSavingSettings} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none">
+                                {isSavingSettings ? 'Salvando...' : 'Salvar Links'}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -343,7 +404,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   // ---------------- MEMBER DASHBOARD (App Style Grid) ----------------
   
   const menuItems = [
-    { label: 'Cultos ao Vivo', icon: Youtube, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', action: () => { if(socialLinks.youtube) window.open(socialLinks.youtube, '_blank'); else alert('Link não configurado.'); } },
+    { label: 'Cultos ao Vivo', icon: Youtube, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', action: () => { if(socialLinks.youtube_url) window.open(socialLinks.youtube_url, '_blank'); else alert('Link não configurado.'); } },
     { label: 'Doações', icon: DollarSign, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', action: () => onChangeView?.('finance') },
     { label: 'Pedidos Oração', icon: HeartHandshake, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/20', action: () => onChangeView?.('prayers') },
     { label: 'Agenda', icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', action: () => onChangeView?.('announcements') },

@@ -1,15 +1,15 @@
 
 -- ============================================================================
 -- SCRIPT DE CONFIGURAÇÃO DO BANCO DE DADOS (SUPABASE)
--- Copie este código e cole no SQL Editor do seu projeto Supabase.
+-- Copie este código e cole no SQL Editor do seu projeto Supabase e clique em RUN.
 -- ============================================================================
 
--- 1. CRIAÇÃO DAS TABELAS (Baseado nos tipos do TypeScript)
+-- 1. CRIAÇÃO DAS TABELAS
 
 -- Tabela de Membros
 CREATE TABLE IF NOT EXISTS members (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  code TEXT, -- Campo adicionado para numeração (Ano.Congregacao.Sequencia)
+  code TEXT, -- Numeração (Ano.Congregacao.Sequencia)
   name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
@@ -48,12 +48,12 @@ CREATE TABLE IF NOT EXISTS members (
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   description TEXT NOT NULL,
-  amount NUMERIC(10,2) NOT NULL, -- Valores monetários
+  amount NUMERIC(10,2) NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
   category TEXT,
   "paymentMethod" TEXT,
   date DATE NOT NULL,
-  "memberId" UUID REFERENCES members(id) ON DELETE SET NULL, -- Relacionamento com membros
+  "memberId" UUID REFERENCES members(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS locations (
   city TEXT,
   "serviceTimes" TEXT,
   "mapUrl" TEXT,
-  "imageUrl" TEXT,
+  "imageUrl" TEXT, -- Foto da Fachada
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -105,102 +105,84 @@ CREATE TABLE IF NOT EXISTS prayer_requests (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ATUALIZAÇÃO SEGURA: Adiciona coluna code se não existir (para quem já rodou o script antes)
+-- Tabela de Configurações da Igreja (Redes Sociais, etc)
+CREATE TABLE IF NOT EXISTS church_settings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  instagram_url TEXT,
+  facebook_url TEXT,
+  youtube_url TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. GARANTIA DE COLUNAS (Para atualizar tabelas existentes sem perder dados)
 DO $$
 BEGIN
+    -- Members: code
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='code') THEN
         ALTER TABLE members ADD COLUMN code TEXT;
+    END IF;
+    -- Locations: imageUrl
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='imageUrl') THEN
+        ALTER TABLE locations ADD COLUMN "imageUrl" TEXT;
+    END IF;
+    -- Transactions: paymentMethod
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='paymentMethod') THEN
+        ALTER TABLE transactions ADD COLUMN "paymentMethod" TEXT;
     END IF;
 END
 $$;
 
--- ============================================================================
--- 2. SEGURANÇA (ROW LEVEL SECURITY - RLS)
--- Isso impede que hackers leiam ou apaguem dados usando sua chave pública.
--- ============================================================================
+-- 3. SEGURANÇA (ROW LEVEL SECURITY - RLS)
 
--- Habilitar RLS em todas as tabelas
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prayer_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE church_settings ENABLE ROW LEVEL SECURITY;
 
--- ============================================================================
--- 3. POLÍTICAS DE ACESSO (POLICIES)
--- Lógica: 
--- 1. Usuários autenticados (Membros logados) podem LER a maioria dos dados.
--- 2. Apenas ADMINS (emails contendo 'admin') podem ESCREVER/EDITAR/APAGAR.
--- ============================================================================
+-- 4. POLÍTICAS DE ACESSO (POLICIES)
+-- Removemos as antigas primeiro para evitar erro de duplicidade ao rodar o script novamente
 
--- >>> TABELA MEMBERS <<<
--- Todos autenticados podem ler lista de membros (para aniversariantes, etc)
-CREATE POLICY "Membros podem ver lista" ON members 
-FOR SELECT TO authenticated USING (true);
+-- MEMBERS
+DROP POLICY IF EXISTS "Leitura Membros" ON members;
+DROP POLICY IF EXISTS "Escrita Membros" ON members;
+CREATE POLICY "Leitura Membros" ON members FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
--- Apenas Admin pode criar/editar/excluir membros
-CREATE POLICY "Admin gerencia membros" ON members 
-FOR ALL TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%') 
-WITH CHECK (auth.jwt() ->> 'email' ILIKE '%admin%');
+-- TRANSACTIONS
+DROP POLICY IF EXISTS "Admin Financeiro" ON transactions;
+CREATE POLICY "Admin Financeiro" ON transactions FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
+-- INVENTORY
+DROP POLICY IF EXISTS "Leitura Inventario" ON inventory;
+DROP POLICY IF EXISTS "Escrita Inventario" ON inventory;
+CREATE POLICY "Leitura Inventario" ON inventory FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Inventario" ON inventory FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
--- >>> TABELA TRANSACTIONS (Tesouraria - Dado Sensível) <<<
--- Apenas Admin vê e mexe no financeiro
-CREATE POLICY "Apenas Admin acessa financeiro" ON transactions 
-FOR ALL TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+-- ANNOUNCEMENTS
+DROP POLICY IF EXISTS "Leitura Avisos" ON announcements;
+DROP POLICY IF EXISTS "Escrita Avisos" ON announcements;
+CREATE POLICY "Leitura Avisos" ON announcements FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Avisos" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
+-- LOCATIONS
+DROP POLICY IF EXISTS "Leitura Locais" ON locations;
+DROP POLICY IF EXISTS "Escrita Locais" ON locations;
+CREATE POLICY "Leitura Locais" ON locations FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Locais" ON locations FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
--- >>> TABELA INVENTORY <<<
--- Todos podem ver o patrimônio (opcional, se quiser restringir mude para admin)
-CREATE POLICY "Todos veem inventario" ON inventory 
-FOR SELECT TO authenticated USING (true);
+-- PRAYER REQUESTS
+DROP POLICY IF EXISTS "Criar Pedido" ON prayer_requests;
+DROP POLICY IF EXISTS "Ler Pedidos Publicos" ON prayer_requests;
+DROP POLICY IF EXISTS "Admin Orações" ON prayer_requests;
+CREATE POLICY "Criar Pedido" ON prayer_requests FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Ler Pedidos Publicos" ON prayer_requests FOR SELECT TO authenticated USING ("isPrivate" = false OR auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Admin Orações" ON prayer_requests FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
 
--- Apenas Admin altera inventário
-CREATE POLICY "Admin gerencia inventario" ON inventory 
-FOR ALL TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
-
-
--- >>> TABELA ANNOUNCEMENTS (Avisos) <<<
--- Todos leem
-CREATE POLICY "Todos leem avisos" ON announcements 
-FOR SELECT TO authenticated USING (true); -- Pode mudar para 'anon' se quiser site público
-
--- Admin posta
-CREATE POLICY "Admin posta avisos" ON announcements 
-FOR ALL TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
-
-
--- >>> TABELA LOCATIONS (Endereços) <<<
--- Todos leem
-CREATE POLICY "Todos leem locais" ON locations 
-FOR SELECT TO authenticated USING (true);
-
--- Admin gerencia
-CREATE POLICY "Admin gerencia locais" ON locations 
-FOR ALL TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
-
-
--- >>> TABELA PRAYER REQUESTS <<<
--- Todos podem criar pedidos
-CREATE POLICY "Todos criam pedidos" ON prayer_requests 
-FOR INSERT TO authenticated WITH CHECK (true);
-
--- Todos veem pedidos PÚBLICOS
-CREATE POLICY "Ver pedidos publicos" ON prayer_requests 
-FOR SELECT TO authenticated 
-USING ("isPrivate" = false OR auth.jwt() ->> 'email' ILIKE '%admin%');
-
--- Admin gerencia tudo
-CREATE POLICY "Admin gerencia oracoes" ON prayer_requests 
-FOR UPDATE TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
-
-CREATE POLICY "Admin apaga oracoes" ON prayer_requests 
-FOR DELETE TO authenticated 
-USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+-- CHURCH SETTINGS
+DROP POLICY IF EXISTS "Leitura Configs" ON church_settings;
+DROP POLICY IF EXISTS "Escrita Configs" ON church_settings;
+CREATE POLICY "Leitura Configs" ON church_settings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Configs" ON church_settings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
