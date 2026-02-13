@@ -1,7 +1,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Acesso seguro às variáveis de ambiente
+// =================================================================================
+// NOTA DE SEGURANÇA:
+// É seguro expor a URL e a ANON KEY no cliente (navegador), desde que o RLS
+// (Row Level Security) esteja habilitado no banco de dados.
+// NÃO adicione a 'service_role_key' aqui.
+// =================================================================================
+
+// Acesso seguro às variáveis de ambiente no Vite
 const env = (import.meta as any).env || {};
 
 const supabaseUrl = env.VITE_SUPABASE_URL;
@@ -14,13 +21,11 @@ export const isConfigured =
   !supabaseUrl.includes('placeholder');
 
 if (!isConfigured) {
-  console.warn("ATENÇÃO: Chaves do Supabase não encontradas. O App rodará em modo de DEMONSTRAÇÃO (Offline).");
-} else {
-  // Check de segurança (Log para desenvolvedor)
-  console.log("Supabase Conectado. Certifique-se de ter rodado o script 'SUPABASE_SETUP.sql' no painel do Supabase para habilitar a segurança RLS.");
+  console.warn("⚠️ MODO DEMONSTRAÇÃO: Chaves do Supabase não encontradas.");
+  console.warn("Para conectar ao banco real, adicione VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env ou nas variáveis da Vercel.");
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder'
-);
+// Cria o cliente apenas se as chaves existirem, senão cria um cliente 'dummy' para não quebrar o app
+export const supabase = isConfigured 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder');

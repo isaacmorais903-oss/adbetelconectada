@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
+import { supabase, isConfigured } from '../services/supabaseClient';
 
 interface SidebarProps {
   currentView: View;
@@ -18,6 +19,11 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onToggleRole, isDarkMode, onToggleTheme, privacyMode, onTogglePrivacy }) => {
   const [imgError, setImgError] = useState(false);
   const [socialLinks, setSocialLinks] = useState({ instagram: '', facebook: '', youtube: '' });
+  
+  // States for Password Change Modal
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [isChangingPass, setIsChangingPass] = useState(false);
 
   // Update social links from local storage periodically or on mount
   useEffect(() => {
@@ -30,6 +36,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
     return () => window.removeEventListener('storage', loadLinks);
   }, []);
   
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (newPassword.length < 6) {
+          alert("A senha deve ter pelo menos 6 caracteres.");
+          return;
+      }
+      setIsChangingPass(true);
+
+      if (!isConfigured) {
+          // Modo Demo
+          await new Promise(r => setTimeout(r, 1000));
+          alert("(Modo Demo) Senha alterada visualmente com sucesso! No modo real, isso atualizaria no Supabase.");
+          setShowSettingsModal(false);
+          setNewPassword('');
+          setIsChangingPass(false);
+          return;
+      }
+
+      try {
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+          alert("Senha atualizada com sucesso!");
+          setShowSettingsModal(false);
+          setNewPassword('');
+      } catch (error: any) {
+          alert("Erro ao atualizar senha: " + error.message);
+      } finally {
+          setIsChangingPass(false);
+      }
+  };
+
   // Define menu items based on Role
   const navItems = userRole === 'admin' 
     ? [
@@ -51,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
       ];
 
   return (
+    <>
     <div className="w-72 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 h-screen fixed left-0 top-0 flex flex-col z-30 hidden md:flex text-slate-300 transition-colors">
       <div 
         onClick={() => onChangeView('dashboard')}
@@ -109,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
             </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
             <button 
                 onClick={onToggleTheme}
                 className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-yellow-400 transition-all"
@@ -123,6 +161,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
                 title="Modo Privacidade (Ocultar Dados)"
             >
                 {privacyMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+            <button 
+                onClick={() => setShowSettingsModal(true)}
+                className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-blue-400 transition-all"
+                title="Configurações e Senha"
+            >
+                <Settings className="w-4 h-4" />
             </button>
              <button 
                 onClick={onToggleRole}
@@ -155,5 +200,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
         </div>
       </div>
     </div>
+
+    {/* MODAL DE ALTERAÇÃO DE SENHA */}
+    {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+                <button 
+                    onClick={() => setShowSettingsModal(false)}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-blue-600" />
+                    Alterar Senha
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                    Digite a nova senha para o seu acesso atual.
+                </p>
+
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                            Nova Senha
+                        </label>
+                        <input 
+                            type="password" 
+                            required
+                            minLength={6}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={isChangingPass || newPassword.length < 6}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        {isChangingPass ? 'Atualizando...' : 'Confirmar Nova Senha'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    )}
+    </>
   );
 };

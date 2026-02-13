@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Church, Mail, Lock, ArrowRight, Wifi, AlertCircle, ShieldAlert, CheckCircle, UserPlus, LogIn } from 'lucide-react';
+import { Church, Mail, Lock, ArrowRight, Wifi, AlertCircle, UserPlus, LogIn } from 'lucide-react';
 import { APP_CONFIG } from '../config';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
@@ -34,7 +34,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         if (password === DEMO_PASSWORD) {
             onLogin(detectedRole);
         } else {
-            setErrorMsg(`Senha incorreta (Dica para teste: ${DEMO_PASSWORD})`);
+            setErrorMsg(`Senha incorreta.`);
         }
         setLoading(false);
         return;
@@ -105,7 +105,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     )}
                  </div>
                  <h2 className="text-3xl font-bold mb-2">{APP_CONFIG.churchName}</h2>
-                 <p className="text-blue-200">Plataforma de Gestão e Membresia</p>
+                 <p className="text-blue-200 italic font-medium">"Nós te recebemos de braços abertos!"</p>
             </div>
         </div>
 
@@ -117,7 +117,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     {isRegistering ? 'Criar Conta' : 'Acesse sua Conta'}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
-                    {isRegistering ? 'Preencha os dados para se cadastrar.' : 'Bem-vindo(a) de volta! Insira suas credenciais.'}
+                    {isRegistering ? 'Preencha os dados para se cadastrar.' : 'Digite seu e-mail e senha para fazer login.'}
                 </p>
             </div>
 
@@ -193,7 +193,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <div className="mt-8 flex justify-center items-center gap-2 text-[10px] text-slate-400 uppercase tracking-widest">
                 <Wifi className={`w-3 h-3 ${isConfigured ? 'text-green-500' : 'text-slate-400'}`} />
-                {isConfigured ? 'Servidor Conectado' : 'Modo Demonstração (Senha: 123456)'}
+                {isConfigured ? 'Servidor Conectado' : 'Aguardando Conexão'}
             </div>
         </div>
       </div>
