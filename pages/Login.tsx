@@ -111,6 +111,25 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Lado Direito - Login */}
         <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center bg-slate-50 dark:bg-slate-900">
+            
+            {/* LOGO MOBILE (Adicionado) */}
+            <div className="md:hidden flex flex-col items-center mb-8 text-center">
+                {APP_CONFIG.logoUrl && !imgError ? (
+                    <img 
+                        src={APP_CONFIG.logoUrl} 
+                        alt="Logo" 
+                        className="w-20 h-20 object-contain mb-3"
+                        onError={() => setImgError(true)}
+                    />
+                ) : (
+                    <div className="bg-blue-600 p-3 rounded-xl mb-3">
+                        <Church className="w-10 h-10 text-white" />
+                    </div>
+                )}
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{APP_CONFIG.churchName}</h2>
+                <p className="text-blue-600 dark:text-blue-400 text-sm italic mt-1 font-medium">"Nós te recebemos de braços abertos!"</p>
+            </div>
+
             <div className="text-center md:text-left mb-8">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center justify-center md:justify-start gap-2">
                     {isRegistering ? <UserPlus className="w-6 h-6 text-blue-600"/> : <LogIn className="w-6 h-6 text-blue-600" />}

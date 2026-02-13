@@ -113,6 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   const SocialMediaSection = () => {
       const hasAnyLink = socialLinks.instagram_url || socialLinks.facebook_url || socialLinks.youtube_url;
       
+      // Se não tem links e não é admin, não mostra nada
       if (!hasAnyLink && userRole !== 'admin') return null;
 
       return (
@@ -192,7 +193,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             </div>
             {userRole === 'admin' && !hasAnyLink && (
                 <p className="text-xs text-slate-400 mt-2 ml-1">
-                    * Configure os links no botão "Redes Sociais" acima para que apareçam aqui.
+                    * Configure os links no botão "Redes Sociais" acima para que apareçam aqui e no painel dos membros.
                 </p>
             )}
         </div>
@@ -205,8 +206,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         <div className="space-y-8">
         <div className="flex justify-between items-end">
             <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white hidden md:block">Painel Administrativo</h1>
-            <p className="text-slate-500 dark:text-slate-400 hidden md:block">Visão geral da gestão da igreja.</p>
+            {/* Alterado: removido hidden md:block para aparecer no mobile e confirmar que é Admin */}
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Painel Administrativo</h1>
+            <p className="text-slate-500 dark:text-slate-400">Visão geral da gestão da igreja.</p>
             </div>
             <div className="hidden sm:block text-right">
             <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -404,7 +406,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   // ---------------- MEMBER DASHBOARD (App Style Grid) ----------------
   
   const menuItems = [
-    { label: 'Cultos ao Vivo', icon: Youtube, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', action: () => { if(socialLinks.youtube_url) window.open(socialLinks.youtube_url, '_blank'); else alert('Link não configurado.'); } },
+    { label: 'Cultos ao Vivo', icon: Youtube, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', action: () => { if(socialLinks.youtube_url) window.open(socialLinks.youtube_url, '_blank'); else alert('Link não configurado pelo administrador.'); } },
     { label: 'Doações', icon: DollarSign, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', action: () => onChangeView?.('finance') },
     { label: 'Pedidos Oração', icon: HeartHandshake, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/20', action: () => onChangeView?.('prayers') },
     { label: 'Agenda', icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', action: () => onChangeView?.('announcements') },
@@ -440,6 +442,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
         </div>
+        
+        {/* Social Media Links - NOVA POSIÇÃO */}
+        <SocialMediaSection />
 
         {/* Action Grid (The App Look) */}
         <div>
@@ -466,9 +471,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 })}
             </div>
         </div>
-        
-        {/* Render Social Section for Members (NOVA POSIÇÃO E ESTILO) */}
-        <SocialMediaSection />
 
         {/* Highlights / News Feed */}
         <div className="space-y-4">
