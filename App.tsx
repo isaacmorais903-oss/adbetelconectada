@@ -62,9 +62,12 @@ const App: React.FC = () => {
       setSession(session);
       setIsAuthenticated(true);
       
-      // Determine Role based on Email (Simple logic for this version)
+      // Determine Role based on Email
       const email = session.user?.email || '';
-      const role = email.toLowerCase().includes('admin') ? 'admin' : 'member';
+      // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
+      const isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+      const role = isAdmin ? 'admin' : 'member';
+      
       setUserRole(role);
       
       fetchData();

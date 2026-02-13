@@ -23,9 +23,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
     setErrorMsg('');
 
-    // Lógica para definir papel baseado no email (Simples e eficaz para o MVP)
-    // Se o email conter "admin", entra como Admin. Caso contrário, Membro.
-    const detectedRole = email.toLowerCase().includes('admin') ? 'admin' : 'member';
+    // Lógica para definir papel baseado no email
+    // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
+    const isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+    const detectedRole = isAdmin ? 'admin' : 'member';
 
     // 1. MODO DEMONSTRAÇÃO / OFFLINE (Sem Supabase)
     if (!isConfigured) {
@@ -162,7 +163,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         />
                     </div>
                     {isRegistering && (
-                        <p className="text-[10px] text-slate-400 ml-1">Para testar como Admin, use um email contendo "admin" (ex: admin@teste.com).</p>
+                        <p className="text-[10px] text-slate-400 ml-1">Para acesso Admin, use um email contendo: "adm", "pastor", "lider" ou "secretaria".</p>
                     )}
                 </div>
 

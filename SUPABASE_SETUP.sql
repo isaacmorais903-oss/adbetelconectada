@@ -1,8 +1,7 @@
 
 -- ============================================================================
--- SCRIPT DE CONFIGURAÇÃO DO BANCO DE DADOS (SUPABASE) - VERSÃO CORRIGIDA
--- Este script verifica se as tabelas/políticas já existem para evitar erros.
--- Copie e cole no SQL Editor do Supabase e clique em RUN.
+-- SCRIPT DE CONFIGURAÇÃO DO BANCO DE DADOS (SUPABASE) - ATUALIZADO
+-- Inclui novas regras de e-mail para Administradores (pastor, adm, lider, etc)
 -- ============================================================================
 
 -- 1. CRIAÇÃO DAS TABELAS (Se não existirem)
@@ -129,40 +128,40 @@ ALTER TABLE prayer_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE church_settings ENABLE ROW LEVEL SECURITY;
 
 -- 4. POLÍTICAS DE ACESSO (Recriação Segura)
--- Removemos as políticas antigas se existirem para evitar erro "policy already exists"
+-- O operador ~* faz uma busca REGEX insensível a maiúsculas/minúsculas
 
 -- TABLE: MEMBERS
 DROP POLICY IF EXISTS "Leitura Membros" ON members;
 DROP POLICY IF EXISTS "Escrita Membros" ON members;
 
 CREATE POLICY "Leitura Membros" ON members FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: TRANSACTIONS
 DROP POLICY IF EXISTS "Admin Financeiro" ON transactions;
 
-CREATE POLICY "Admin Financeiro" ON transactions FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Admin Financeiro" ON transactions FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: INVENTORY
 DROP POLICY IF EXISTS "Leitura Inventario" ON inventory;
 DROP POLICY IF EXISTS "Escrita Inventario" ON inventory;
 
 CREATE POLICY "Leitura Inventario" ON inventory FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Inventario" ON inventory FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Escrita Inventario" ON inventory FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: ANNOUNCEMENTS
 DROP POLICY IF EXISTS "Leitura Avisos" ON announcements;
 DROP POLICY IF EXISTS "Escrita Avisos" ON announcements;
 
 CREATE POLICY "Leitura Avisos" ON announcements FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Avisos" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Escrita Avisos" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: LOCATIONS
 DROP POLICY IF EXISTS "Leitura Locais" ON locations;
 DROP POLICY IF EXISTS "Escrita Locais" ON locations;
 
 CREATE POLICY "Leitura Locais" ON locations FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Locais" ON locations FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Escrita Locais" ON locations FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: PRAYER_REQUESTS
 DROP POLICY IF EXISTS "Criar Pedido" ON prayer_requests;
@@ -170,12 +169,12 @@ DROP POLICY IF EXISTS "Ler Pedidos Publicos" ON prayer_requests;
 DROP POLICY IF EXISTS "Admin Orações" ON prayer_requests;
 
 CREATE POLICY "Criar Pedido" ON prayer_requests FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Ler Pedidos Publicos" ON prayer_requests FOR SELECT TO authenticated USING ("isPrivate" = false OR auth.jwt() ->> 'email' ILIKE '%admin%');
-CREATE POLICY "Admin Orações" ON prayer_requests FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Ler Pedidos Publicos" ON prayer_requests FOR SELECT TO authenticated USING ("isPrivate" = false OR auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
+CREATE POLICY "Admin Orações" ON prayer_requests FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: CHURCH_SETTINGS
 DROP POLICY IF EXISTS "Leitura Configs" ON church_settings;
 DROP POLICY IF EXISTS "Escrita Configs" ON church_settings;
 
 CREATE POLICY "Leitura Configs" ON church_settings FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Configs" ON church_settings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ILIKE '%admin%');
+CREATE POLICY "Escrita Configs" ON church_settings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
