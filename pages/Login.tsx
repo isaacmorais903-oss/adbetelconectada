@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Church, Mail, Lock, ArrowRight, Wifi, AlertCircle, UserPlus, LogIn } from 'lucide-react';
+import { Church, Mail, Lock, ArrowRight, Wifi, AlertCircle, UserPlus, LogIn, ShieldAlert } from 'lucide-react';
 import { APP_CONFIG } from '../config';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
@@ -9,24 +9,33 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const DEMO_PASSWORD = "123456"; // Senha para usar se o Supabase não estiver conectado
+  const DEMO_PASSWORD = "123456"; 
+  const MASTER_CODE = "AD2024"; // <--- CÓDIGO DE SEGURANÇA PARA CRIAR CONTAS ADMIN
 
   const [isRegistering, setIsRegistering] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [adminCode, setAdminCode] = useState(''); // Estado para o código de segurança
   const [errorMsg, setErrorMsg] = useState('');
   const [imgError, setImgError] = useState(false);
+
+  // Verifica se o email digitado é de um administrador
+  const isAdminEmail = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
 
-    // Lógica para definir papel baseado no email
-    // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
-    const isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
-    const detectedRole = isAdmin ? 'admin' : 'member';
+    const detectedRole = isAdminEmail ? 'admin' : 'member';
+
+    // VERIFICAÇÃO DE SEGURANÇA PARA ADMINS NO CADASTRO
+    if (isRegistering && isAdminEmail && adminCode !== MASTER_CODE) {
+        setErrorMsg(`Para cadastrar um acesso administrativo ("${email}"), é necessário o Código da Igreja.`);
+        setLoading(false);
+        return;
+    }
 
     // 1. MODO DEMONSTRAÇÃO / OFFLINE (Sem Supabase)
     if (!isConfigured) {
@@ -35,7 +44,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         if (password === DEMO_PASSWORD) {
             onLogin(detectedRole);
         } else {
-            setErrorMsg(`Senha incorreta.`);
+            setErrorMsg(`Senha incorreta (Demo: ${DEMO_PASSWORD})`);
         }
         setLoading(false);
         return;
@@ -45,17 +54,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
         if (isRegistering) {
             // Tenta Cadastrar
-            // IMPORTANTE: emailRedirectTo garante que o link aponte para a URL atual (Vercel) e não localhost
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     emailRedirectTo: window.location.origin
                 }
             });
+            
             if (error) throw error;
-            alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar o link de acesso.');
-            setIsRegistering(false); // Volta para tela de login
+
+            // Se "Confirm Email" estiver DESLIGADO no Supabase, logamos direto.
+            if (data.session) {
+                onLogin(detectedRole);
+            } else {
+                alert('Cadastro realizado! Se o e-mail não chegar em 1 minuto, peça ao Admin para liberar seu acesso.');
+                setIsRegistering(false); 
+            }
+
         } else {
             // Tenta Logar
             const { error } = await supabase.auth.signInWithPassword({
@@ -70,10 +86,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } catch (error: any) {
         console.error("Auth Error:", error);
         
-        if (error.message.includes('Invalid login credentials') && !isRegistering) {
+        if (error.message.includes('Invalid login credentials')) {
             setErrorMsg("E-mail ou senha incorretos.");
         } else if (error.message.includes('User already registered')) {
             setErrorMsg("Este e-mail já está cadastrado. Tente fazer login.");
+        } else if (error.message.includes('Email not confirmed')) {
+            setErrorMsg("E-mail pendente de confirmação.");
         } else {
             setErrorMsg(error.message || "Erro ao realizar operação");
         }
@@ -117,7 +135,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Lado Direito - Login */}
         <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center bg-slate-50 dark:bg-slate-900">
             
-            {/* LOGO MOBILE (Adicionado) */}
+            {/* LOGO MOBILE */}
             <div className="md:hidden flex flex-col items-center mb-8 text-center">
                 {APP_CONFIG.logoUrl && !imgError ? (
                     <img 
@@ -166,8 +184,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             placeholder="seu@email.com"
                         />
                     </div>
-                    {isRegistering && (
-                        <p className="text-[10px] text-slate-400 ml-1">Para acesso Admin, use um email contendo: "adm", "pastor", "lider" ou "secretaria".</p>
+                    {isRegistering && isAdminEmail && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 ml-1 font-semibold flex items-center gap-1 mt-1">
+                            <ShieldAlert className="w-3 h-3" /> Acesso Admin detectado. Chave Mestra necessária.
+                        </p>
                     )}
                 </div>
 
@@ -186,6 +206,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         />
                     </div>
                 </div>
+
+                {/* CAMPO DE SEGURANÇA EXTRA PARA ADMINS */}
+                {isRegistering && isAdminEmail && (
+                     <div className="space-y-1 animate-in slide-in-from-top-2 fade-in">
+                        <label className="text-sm font-bold text-amber-600 dark:text-amber-500 flex items-center gap-2">
+                             Código da Igreja (Segurança)
+                        </label>
+                        <div className="relative">
+                            <ShieldAlert className="absolute left-3 top-3.5 w-5 h-5 text-amber-500" />
+                            <input 
+                                type="text" 
+                                required
+                                value={adminCode}
+                                onChange={e => setAdminCode(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 bg-amber-50 dark:bg-slate-800 border border-amber-200 dark:border-amber-900/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white placeholder-amber-300"
+                                placeholder="Digite o código da liderança"
+                            />
+                        </div>
+                        <p className="text-[10px] text-slate-400 ml-1">Para teste use: <b>AD2024</b></p>
+                    </div>
+                )}
 
                 <button 
                     type="submit" 
@@ -208,6 +249,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     onClick={() => {
                         setIsRegistering(!isRegistering);
                         setErrorMsg('');
+                        setAdminCode('');
                     }}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
                 >
