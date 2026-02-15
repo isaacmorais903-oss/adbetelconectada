@@ -45,9 +45,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
         if (isRegistering) {
             // Tenta Cadastrar
+            // IMPORTANTE: emailRedirectTo garante que o link aponte para a URL atual (Vercel) e não localhost
             const { error } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
             });
             if (error) throw error;
             alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar o link de acesso.');
