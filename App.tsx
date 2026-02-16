@@ -166,7 +166,14 @@ const App: React.FC = () => {
 
     switch(currentView) {
       case 'dashboard': 
-        return <Dashboard userRole={userRole} onChangeView={setCurrentView} onBackup={handleBackup} onExportCSV={handleExportCSV} onRestore={handleRestore} />;
+        return <Dashboard 
+                  userRole={userRole} 
+                  onChangeView={setCurrentView} 
+                  onBackup={handleBackup} 
+                  onExportCSV={handleExportCSV} 
+                  onRestore={handleRestore}
+                  members={members} // Passando membros para contagem
+               />;
       case 'members': 
         return <Members userRole={userRole} privacyMode={privacyMode} members={members} setMembers={setMembers} />;
       case 'finance': 

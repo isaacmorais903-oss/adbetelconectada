@@ -200,7 +200,7 @@ export const Locations: React.FC = () => {
                     className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-700 text-white py-3 rounded-xl font-medium hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors mt-auto"
                 >
                     <Navigation className="w-4 h-4" />
-                    Abrir no GPS
+                    Abrir no Maps
                 </a>
             </div>
           </div>

@@ -1,9 +1,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight, Save, Upload, FileSpreadsheet, Share2, Facebook, Instagram, ExternalLink, X } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { StatsCard } from '../components/StatsCard';
-import { UserRole, View, ChurchSettings } from '../types';
+import { UserRole, View, ChurchSettings, Member, MemberStatus } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
 interface DashboardProps {
@@ -12,18 +11,10 @@ interface DashboardProps {
   onBackup?: () => void;
   onExportCSV?: () => void;
   onRestore?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  members?: Member[];
 }
 
-const data = [
-  { name: 'Jan', attendance: 120, donations: 2400 },
-  { name: 'Fev', attendance: 132, donations: 1398 },
-  { name: 'Mar', attendance: 145, donations: 3800 },
-  { name: 'Abr', attendance: 150, donations: 3908 },
-  { name: 'Mai', attendance: 170, donations: 4800 },
-  { name: 'Jun', attendance: 185, donations: 5200 },
-];
-
-export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, onBackup, onExportCSV, onRestore }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, onBackup, onExportCSV, onRestore, members = [] }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [socialLinks, setSocialLinks] = useState<ChurchSettings>({
@@ -32,6 +23,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
       youtube_url: ''
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Calcula membros ativos
+  const activeMembersCount = members.filter(m => m.status === MemberStatus.ACTIVE || m.status === 'Ativo').length;
+  // Calcula Visitantes (apenas para exemplo, se houver lógica de visitantes nos membros)
+  const visitorsCount = members.filter(m => m.status === MemberStatus.VISITOR || m.status === 'Visitante').length;
+
 
   // Carregar configurações do Supabase (e fallback LocalStorage)
   useEffect(() => {
@@ -307,47 +304,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatsCard label="Membros Totais" value="185" trend="+12%" trendUp={true} icon={Users} color="text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400" />
-            <StatsCard label="Visitantes (Mês)" value="24" trend="+5%" trendUp={true} icon={Heart} color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StatsCard label="Membros Ativos" value={activeMembersCount.toString()} trend="Registrados no Sistema" trendUp={true} icon={Users} color="text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400" />
+            <StatsCard label="Visitantes (Cadastro)" value={visitorsCount.toString()} trend="Status Visitante" trendUp={true} icon={Heart} color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400" />
             <StatsCard label="Eventos Ativos" value="3" trend="Mesmo nível" trendUp={true} icon={Calendar} color="text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" />
-            <StatsCard label="Entradas (Mês)" value="R$ 5.2k" trend="+8.5%" trendUp={true} icon={DollarSign} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" />
         </div>
         
         {/* Render Social Section for Admins too */}
         <SocialMediaSection />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm min-w-0 transition-colors">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Frequência nos Cultos</h3>
-            <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                    <XAxis dataKey="name" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155', color: '#fff' }} />
-                    <Line type="monotone" dataKey="attendance" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} />
-                </LineChart>
-                </ResponsiveContainer>
-            </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm min-w-0 transition-colors">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Crescimento Financeiro</h3>
-            <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                    <XAxis dataKey="name" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155', color: '#fff' }} />
-                    <Bar dataKey="donations" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-                </ResponsiveContainer>
-            </div>
-            </div>
-        </div>
 
         {/* MODAL DE CONFIGURAÇÃO DE REDES SOCIAIS */}
         {showSocialModal && (
