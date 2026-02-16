@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon } from 'lucide-react';
+import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon, Edit2 } from 'lucide-react';
 import { Location } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
@@ -22,6 +22,7 @@ export const Locations: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>(INITIAL_LOCATIONS);
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   
   // Form State
   const [newLocation, setNewLocation] = useState<Partial<Location>>({
@@ -52,7 +53,27 @@ export const Locations: React.FC = () => {
     }
   };
 
-  const handleAddLocation = async (e: React.FormEvent) => {
+  const openAddModal = () => {
+      setIsEditing(false);
+      setNewLocation({
+          type: 'Congregação',
+          city: 'São Paulo - SP',
+          serviceTimes: 'Dom: 19h | Qui: 20h',
+          imageUrl: '',
+          mapUrl: '',
+          name: '',
+          address: ''
+      });
+      setShowModal(true);
+  };
+
+  const openEditModal = (loc: Location) => {
+      setIsEditing(true);
+      setNewLocation({ ...loc });
+      setShowModal(true);
+  };
+
+  const handleSaveLocation = async (e: React.FormEvent) => {
       e.preventDefault();
       if(!newLocation.name || !newLocation.address) return;
       setIsSaving(true);
@@ -65,16 +86,31 @@ export const Locations: React.FC = () => {
           };
 
           if(isConfigured) {
-               const { data, error } = await supabase.from('locations').insert(payload).select();
-               if(error) throw error;
-               if(data) setLocations([...locations, data[0] as Location]);
+               if (isEditing && newLocation.id) {
+                   // UPDATE
+                   const { error } = await supabase.from('locations').update(payload).eq('id', newLocation.id);
+                   if(error) throw error;
+                   
+                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
+               } else {
+                   // INSERT
+                   delete payload.id; // Garante que não envia ID na criação
+                   const { data, error } = await supabase.from('locations').insert(payload).select();
+                   if(error) throw error;
+                   if(data) setLocations([...locations, data[0] as Location]);
+               }
           } else {
-               const loc = { ...payload, id: Math.random().toString() } as Location;
-               setLocations([...locations, loc]);
+               // OFFLINE MODE
+               if (isEditing && newLocation.id) {
+                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
+               } else {
+                   const loc = { ...payload, id: Math.random().toString() } as Location;
+                   setLocations([...locations, loc]);
+               }
           }
           setShowModal(false);
-          setNewLocation({ type: 'Congregação', city: 'São Paulo - SP', serviceTimes: '', name: '', address: '', imageUrl: '', mapUrl: '' });
       } catch (error) {
+          console.error(error);
           alert('Erro ao salvar local.');
       } finally {
           setIsSaving(false);
@@ -100,7 +136,7 @@ export const Locations: React.FC = () => {
           <p className="text-slate-500 dark:text-slate-400">Gerencie as congregações da igreja.</p>
         </div>
         <button 
-            onClick={() => setShowModal(true)}
+            onClick={openAddModal}
             className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
         >
             <Plus className="w-5 h-5" /> Adicionar Local
@@ -111,8 +147,13 @@ export const Locations: React.FC = () => {
         {locations.map((loc) => (
           <div key={loc.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-all group relative flex flex-col h-full">
             
-            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                 <button onClick={() => handleDelete(loc.id)} className="bg-white/90 dark:bg-slate-700/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 backdrop-blur-sm"><Trash2 className="w-4 h-4"/></button>
+            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                 <button onClick={() => openEditModal(loc)} className="bg-white/90 dark:bg-slate-700/90 text-blue-600 p-2 rounded-full shadow-md hover:bg-blue-50 backdrop-blur-sm transition-colors" title="Editar">
+                    <Edit2 className="w-4 h-4"/>
+                 </button>
+                 <button onClick={() => handleDelete(loc.id)} className="bg-white/90 dark:bg-slate-700/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 backdrop-blur-sm transition-colors" title="Excluir">
+                    <Trash2 className="w-4 h-4"/>
+                 </button>
             </div>
 
             <div className="h-48 bg-slate-100 dark:bg-slate-700 relative overflow-hidden flex-shrink-0">
@@ -169,8 +210,8 @@ export const Locations: React.FC = () => {
       {showModal && (
           <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh]">
-                  <h3 className="text-xl font-bold dark:text-white mb-4">Novo Endereço</h3>
-                  <form onSubmit={handleAddLocation} className="space-y-4">
+                  <h3 className="text-xl font-bold dark:text-white mb-4">{isEditing ? 'Editar Endereço' : 'Novo Endereço'}</h3>
+                  <form onSubmit={handleSaveLocation} className="space-y-4">
                       
                       {/* Image Upload Field */}
                       <div>
@@ -234,7 +275,9 @@ export const Locations: React.FC = () => {
                       
                       <div className="flex gap-3 mt-6 pt-2">
                           <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border rounded-lg dark:text-white bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
-                          <button type="submit" disabled={isSaving} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none">{isSaving ? 'Salvando...' : 'Adicionar Local'}</button>
+                          <button type="submit" disabled={isSaving} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none">
+                              {isSaving ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Adicionar Local')}
+                          </button>
                       </div>
                   </form>
               </div>
