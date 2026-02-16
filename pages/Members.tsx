@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash } from 'lucide-react';
+import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
-import { generateMembershipCard, generateCertificate } from '../services/pdfService';
+import { generateMembershipCard, generateCertificate, generateLgpdTerm } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
 
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
@@ -79,6 +79,11 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
       setNewCongregationName('');
       setIsAddingCongregation(false);
     }
+  };
+
+  const handlePrintLGPD = () => {
+      // Gera um PDF do termo preenchido para este membro
+      generateLgpdTerm(data as Member);
   };
 
   // Classe padrão para inputs
@@ -299,6 +304,55 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
               </div>
           </div>
       </section>
+
+      {/* 4. PRIVACIDADE E LGPD */}
+      <section>
+          <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" /> 4. Privacidade e Consentimento (LGPD)
+          </h4>
+          <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 text-justify">
+                  Em conformidade com a Lei Geral de Proteção de Dados (Lei 13.709/2018), a igreja necessita do consentimento do membro para armazenar dados pessoais para fins de gestão eclesiástica, comunicação e histórico de sacramentos.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex-1">
+                      <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors">
+                          <input 
+                              type="checkbox" 
+                              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              checked={data.lgpdConsent || false}
+                              onChange={e => {
+                                  onChange('lgpdConsent', e.target.checked);
+                                  onChange('lgpdConsentDate', e.target.checked ? new Date().toISOString() : undefined);
+                              }}
+                          />
+                          <div>
+                              <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">
+                                  Declaro que o membro leu e assinou o Termo de Consentimento.
+                              </span>
+                              {data.lgpdConsentDate && (
+                                  <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                                      Confirmado em: {new Date(data.lgpdConsentDate).toLocaleDateString('pt-BR')}
+                                  </span>
+                              )}
+                          </div>
+                      </label>
+                  </div>
+                  
+                  {data.name && (
+                    <button 
+                        type="button" 
+                        onClick={handlePrintLGPD}
+                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all whitespace-nowrap"
+                    >
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        Imprimir Termo
+                    </button>
+                  )}
+              </div>
+          </div>
+      </section>
   </div>
 )};
 
@@ -503,8 +557,15 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                 <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden mr-3">
-                         {member.photoUrl && <img src={member.photoUrl} alt="" className="h-full w-full object-cover" />}
+                      <div className="relative h-10 w-10 mr-3">
+                         <div className="h-full w-full rounded-full bg-slate-200 overflow-hidden">
+                             {member.photoUrl && <img src={member.photoUrl} alt="" className="h-full w-full object-cover" />}
+                         </div>
+                         {member.lgpdConsent && (
+                             <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-0.5" title="Consentimento LGPD Ativo">
+                                 <ShieldCheck className="w-4 h-4 text-green-500" />
+                             </div>
+                         )}
                       </div>
                       <div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{member.name}</div>

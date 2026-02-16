@@ -1,6 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import { Member, Transaction } from "../types";
+import { APP_CONFIG } from "../config";
 
 // Helper para carregar imagem de forma assíncrona
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -289,6 +290,78 @@ export const generateCertificate = async (member: Member, type: string, descript
     console.error("Erro ao gerar certificado:", error);
     alert("Erro ao gerar PDF.");
   }
+};
+
+export const generateLgpdTerm = (member: Member) => {
+    const doc = new jsPDF();
+    const width = doc.internal.pageSize.getWidth();
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("TERMO DE CONSENTIMENTO PARA TRATAMENTO DE DADOS", width / 2, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("(LGPD - Lei Geral de Proteção de Dados - Lei 13.709/2018)", width / 2, 28, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    
+    let y = 45;
+    const text1 = `Eu, ${member.name.toUpperCase()}, portador(a) do CPF ${member.cpf || '_________________'}, na qualidade de membro/visitante da ${APP_CONFIG.churchName}, manifesto meu CONSENTIMENTO LIVRE, INFORMADO E INEQUÍVOCO para que a instituição realize o tratamento de meus dados pessoais.`;
+    
+    const lines1 = doc.splitTextToSize(text1, 180);
+    doc.text(lines1, 15, y);
+    y += (lines1.length * 6) + 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("1. FINALIDADE DO TRATAMENTO:", 15, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    
+    const purposes = [
+        "- Gestão administrativa e eclesiástica de membros;",
+        "- Comunicação interna (avisos, eventos, escalas, aniversários);",
+        "- Histórico de sacramentos (batismos, casamentos, consagrações);",
+        "- Controle de acesso e segurança nas dependências da igreja;",
+        "- Registro de contribuições financeiras (dízimos e ofertas) para fins fiscais e de transparência."
+    ];
+    
+    purposes.forEach(p => {
+        doc.text(p, 15, y);
+        y += 6;
+    });
+    y += 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("2. COMPARTILHAMENTO DE DADOS:", 15, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    const text2 = "A Igreja compromete-se a não compartilhar seus dados pessoais com terceiros para fins comerciais. O compartilhamento poderá ocorrer apenas para cumprimento de obrigações legais ou com prestadores de serviço essenciais (ex: software de gestão, contabilidade), desde que estes também garantam a segurança dos dados.";
+    const lines2 = doc.splitTextToSize(text2, 180);
+    doc.text(lines2, 15, y);
+    y += (lines2.length * 6) + 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("3. DIREITOS DO TITULAR:", 15, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    const text3 = "O titular poderá, a qualquer momento, solicitar acesso, correção, atualização ou a revogação deste consentimento (exceto para dados necessários ao cumprimento de obrigações legais), mediante requerimento à secretaria da igreja.";
+    const lines3 = doc.splitTextToSize(text3, 180);
+    doc.text(lines3, 15, y);
+    y += (lines3.length * 6) + 5;
+    
+    // Assinatura
+    y = 240;
+    const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.text(`Cidade/UF: ______________________, ${dateStr}`, width / 2, y - 20, { align: "center" });
+
+    doc.line(40, y, 170, y);
+    doc.setFont("helvetica", "bold");
+    doc.text(member.name.toUpperCase(), width / 2, y + 5, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Assinatura do Titular (ou Responsável Legal)", width / 2, y + 10, { align: "center" });
+
+    doc.save(`Termo_LGPD_${member.name.replace(/\s+/g, '_')}.pdf`);
 };
 
 export const generateFinancialReport = (transactions: Transaction[]) => {

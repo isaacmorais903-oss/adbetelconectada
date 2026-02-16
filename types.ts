@@ -43,6 +43,10 @@ export interface Member {
   holySpiritBaptismDate?: string; // Batismo Espírito Santo
   previousChurch?: string; // Igreja Anterior
   joinedAt: string; // Data de Admissão
+
+  // 4. Privacidade e LGPD
+  lgpdConsent?: boolean; // Se o membro aceitou o termo
+  lgpdConsentDate?: string; // Data do aceite
 }
 
 export enum AnnouncementType {
