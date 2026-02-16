@@ -129,6 +129,16 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
                       value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
               </div>
 
+              {/* FILIAÇÃO */}
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome da Mãe</label>
+                  <input className={inputClass} value={data.motherName || ''} onChange={e => onChange('motherName', e.target.value)} placeholder="Opcional para carteirinha" />
+              </div>
+              <div className="md:col-span-6">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome do Pai</label>
+                  <input className={inputClass} value={data.fatherName || ''} onChange={e => onChange('fatherName', e.target.value)} placeholder="Opcional para carteirinha" />
+              </div>
+
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CPF</label>
                   <input className={inputClass} value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />

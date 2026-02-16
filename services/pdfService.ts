@@ -2,17 +2,6 @@
 import { jsPDF } from "jspdf";
 import { Member, Transaction } from "../types";
 
-// ============================================================================
-// ÁREA DE CONFIGURAÇÃO DE MODELOS (TEMPLATES)
-// ============================================================================
-// Para usar seu modelo, converta sua imagem para Base64 ou use uma URL pública.
-// Se deixar vazio "", o sistema usará o desenho padrão automático.
-
-const MEMBERSHIP_CARD_BG = ""; // Ex: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
-const CERTIFICATE_BG = "";     // Ex: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
-
-// ============================================================================
-
 // Helper para carregar imagem de forma assíncrona
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
@@ -32,99 +21,194 @@ export const generateMembershipCard = async (member: Member) => {
     format: [85.6, 54]
   });
 
-  try {
-    // 1. TENTA CARREGAR O MODELO DE FUNDO DO USUÁRIO
-    if (MEMBERSHIP_CARD_BG) {
-      const bg = await loadImage(MEMBERSHIP_CARD_BG);
-      doc.addImage(bg, 'PNG', 0, 0, 85.6, 54);
-    } else {
-      // 2. SE NÃO TIVER IMAGEM, DESENHA O PADRÃO (FALLBACK)
-      // Fundo / Design
-      doc.setFillColor(37, 99, 235); // Blue 600
-      doc.rect(0, 0, 85.6, 12, 'F'); // Header azul
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("ADBetel Conectada", 5, 8);
+  const width = 85.6;
+  const height = 54;
+  const margin = 3;
+  
+  // Cores Base
+  const darkBlue = "#1e3a8a"; // Azul Escuro (Bordas e Textos)
+  const bgGrey = "#e5e7eb";   // Fundo Cinza Claro
 
-      doc.setDrawColor(37, 99, 235);
-      doc.setLineWidth(0.5);
-      doc.line(5, 45, 80, 45); // Linha rodapé
-      
-      doc.setFontSize(6);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Válido em todo território nacional - ADBetel", 25, 49);
-    }
+  // --- FRENTE DO CARTÃO ---
+  
+  // Fundo Geral
+  doc.setFillColor(bgGrey);
+  doc.rect(0, 0, width, height, 'F');
 
-    // 3. PREENCHIMENTO DOS DADOS (Funciona em cima da imagem ou do desenho)
-    
-    // Área da Foto (Desenhamos um box se não houver foto real, apenas para marcar)
-    // Se você tiver um template com espaço vazado, ajuste as coordenadas X e Y abaixo
-    doc.setDrawColor(200, 200, 200);
-    if (!MEMBERSHIP_CARD_BG) { 
-        // Só desenha o box cinza se não tiver template, para não estragar o design do usuário
-        doc.setFillColor(240, 240, 240);
-        doc.rect(5, 16, 20, 25, 'FD');
-        doc.setTextColor(150, 150, 150);
-        doc.setFontSize(6);
-        doc.text("FOTO", 12, 29);
-    } else {
-        // Se tiver template, tenta carregar a foto do perfil do usuário
-        if(member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
-             try {
-                const profilePic = await loadImage(member.photoUrl);
-                doc.addImage(profilePic, 'JPEG', 5, 16, 20, 25); // Ajuste posição da foto aqui
-             } catch(e) {
-                // Falha ao carregar foto perfil
-             }
-        }
-    }
+  // Borda Externa Grossa Azul (Simulando o design arredondado)
+  doc.setDrawColor(darkBlue);
+  doc.setLineWidth(2);
+  doc.roundedRect(1, 1, width - 2, height - 2, 3, 3, 'D'); // 'D' apenas desenha a borda
 
-    // Dados Textuais
-    // Coordenadas: X (Horizontal), Y (Vertical)
-    
-    // Nome
-    doc.setTextColor(50, 50, 50);
+  // Cabeçalho
+  doc.setFont("times", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(darkBlue);
+  doc.text("Assembleia de Deus em Cristalina Ministério Betel", width / 2, 6, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5.5);
+  doc.setTextColor(0, 0, 0); // Preto
+  doc.text("Rua Prof. José de Foiás Brasil, 302 DNER CEP 73850-000 Cristalina Goiás", width / 2, 9, { align: "center" });
+  
+  doc.setFont("times", "italic");
+  doc.setFontSize(6);
+  doc.text('"Nós de recebemos de braços abertos" (Igreja Missão)', width / 2, 12, { align: "center" });
+
+  // Configuração dos Campos (FRENTE)
+  // Campos: NOME, FUNÇÃO, REGISTRO
+  const fieldHeight = 7;
+  const fieldWidth = 50; // Largura do campo de texto (deixa espaço para foto/logo na direita)
+  const leftX = 4;
+  
+  // Função auxiliar para desenhar campo
+  const drawField = (label: string, value: string, y: number, w: number = fieldWidth) => {
+    // Label
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(member.name.substring(0, 25), 28, 20); 
-
-    // Cargo
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text("CARGO / FUNÇÃO", 28, 24);
+    doc.setFontSize(6);
     doc.setTextColor(0, 0, 0);
+    doc.text(label, leftX, y - 1);
+
+    // Box
+    doc.setDrawColor(darkBlue);
+    doc.setLineWidth(0.8);
+    doc.setFillColor(255, 255, 255); // Branco
+    doc.roundedRect(leftX, y, w, fieldHeight, 1, 1, 'FD');
+
+    // Value
+    doc.setFont("helvetica", "bold"); // Ou normal, dependendo da preferência
     doc.setFontSize(9);
-    doc.text(member.role.toUpperCase(), 28, 28);
-
-    // Data de Membresia
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text("MEMBRO DESDE", 28, 33);
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
-    doc.text(new Date(member.joinedAt).toLocaleDateString('pt-BR'), 28, 37);
+    // Centraliza verticalmente no box
+    doc.text(value.toUpperCase().substring(0, 30), leftX + 1, y + 5);
+  };
 
-    // CÓDIGO DO MEMBRO (Numeração nova)
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text("CÓDIGO / MATRÍCULA", 60, 33);
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10); // Um pouco maior para destaque
-    doc.setFont("courier", "bold"); // Fonte monoespaçada para números
-    
-    // Usa o novo código se existir, senão usa ID formatado como fallback
-    const codeDisplay = member.code || `#${member.id.substring(0,6)}`;
-    doc.text(codeDisplay, 60, 37);
+  drawField("NOME", member.name, 19);
+  drawField("FUNÇÃO", member.role, 30);
+  
+  // Registro (Código)
+  const code = member.code || member.id.substring(0, 8).toUpperCase();
+  drawField("REGISTRO", code, 41);
 
-    doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
+  // ÁREA DA DIREITA (Logo / Foto)
+  // No modelo "Cristalina", há um logo grande da Assembleia de Deus Missão
+  // Vou colocar o logo (placeholder desenhado) e a FOTO do membro sobreposta ou acima.
+  
+  const rightX = 58;
+  const rightY = 18;
+  const rightW = 24;
+  const rightH = 30;
 
-  } catch (error) {
-    console.error("Erro ao gerar carteirinha:", error);
-    alert("Erro ao gerar PDF. Verifique se a imagem de fundo é válida (CORS/Base64).");
+  // Desenha Círculo do Logo (Simulado)
+  doc.setDrawColor(darkBlue);
+  doc.setLineWidth(0.5);
+  doc.setFillColor(255, 255, 255);
+  doc.circle(rightX + (rightW/2), rightY + (rightH/2), 11, 'S'); // 'S' stroke
+  
+  // Texto do Logo Simulado (Curvado seria complexo, vamos simplificar)
+  doc.setFontSize(4);
+  doc.setTextColor(darkBlue);
+  doc.text("ASSEMBLEIA DE DEUS", rightX + (rightW/2), rightY + 3, { align: "center" });
+  doc.text("MINISTÉRIO BETEL", rightX + (rightW/2), rightY + 27, { align: "center" });
+
+  // SE TIVER FOTO, DESENHA A FOTO NO LUGAR DO LOGO (Ou sobre ele)
+  // ID cards geralmente priorizam a foto. Vamos desenhar a foto dentro de uma caixa na direita.
+  if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
+       try {
+          const profilePic = await loadImage(member.photoUrl);
+          // Desenha foto
+          doc.addImage(profilePic, 'JPEG', rightX, rightY, rightW, rightH);
+          // Borda na foto
+          doc.setDrawColor(darkBlue);
+          doc.setLineWidth(0.5);
+          doc.rect(rightX, rightY, rightW, rightH);
+       } catch (e) {
+          // Se falhar, desenha texto FOTO
+          doc.text("FOTO", rightX + (rightW/2), rightY + (rightH/2), { align: "center" });
+       }
+  } else {
+       // Placeholder Foto
+       doc.setFillColor(240, 240, 240);
+       doc.rect(rightX, rightY, rightW, rightH, 'F');
+       doc.setFontSize(6);
+       doc.setTextColor(150, 150, 150);
+       doc.text("FOTO 3x4", rightX + (rightW/2), rightY + (rightH/2), { align: "center" });
   }
+
+
+  // --- VERSO DO CARTÃO ---
+  doc.addPage();
+  
+  // Fundo e Borda (Igual frente)
+  doc.setFillColor(bgGrey);
+  doc.rect(0, 0, width, height, 'F');
+  doc.setDrawColor(darkBlue);
+  doc.setLineWidth(2);
+  doc.roundedRect(1, 1, width - 2, height - 2, 3, 3, 'D');
+
+  // Configuração Grid do Verso
+  // 2 Colunas
+  const col1X = 5;
+  const col2X = 44;
+  const colW = 37;
+  const rowH = 6;
+  const labelH = 4; // Espaço para label
+  const inputH = 5; // Altura do box input
+
+  // Função auxiliar Verso
+  const drawBackField = (label: string, value: string, x: number, y: number, w: number) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5);
+      doc.setTextColor(0, 0, 0);
+      doc.text(label, x, y - 0.5);
+
+      doc.setDrawColor(darkBlue);
+      doc.setLineWidth(0.5);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(x, y, w, inputH, 'FD');
+
+      doc.setFontSize(7);
+      doc.text(value ? value.substring(0, 25) : "", x + 1, y + 3.5);
+  };
+
+  let currY = 8;
+  // Linha 1: Mãe (Largura total 76mm aprox)
+  drawBackField("NOME DA MÃE", member.motherName || "", col1X, currY, 37);
+  drawBackField("CPF", member.cpf || "", col2X, currY, 37); // Layout original poe CPF na direita? Vamos por
+  
+  currY += 9;
+  // Linha 2: Pai e Estado Civil
+  drawBackField("NOME DO PAI", member.fatherName || "", col1X, currY, 37);
+  drawBackField("ESTADO CIVIL", member.maritalStatus || "", col2X, currY, 37);
+
+  currY += 9;
+  // Linha 3: Nacionalidade e Data Nasc
+  drawBackField("NACIONALIDADE", member.nationality || "Brasileira", col1X, currY, 37);
+  // Formata Data
+  const birth = member.birthDate ? new Date(member.birthDate).toLocaleDateString('pt-BR') : "";
+  drawBackField("DATA DE NASCIMENTO", birth, col2X, currY, 37);
+
+  currY += 9;
+  // Linha 4: Naturalidade e Data Batismo
+  const nat = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "";
+  drawBackField("NATURALIDADE", nat, col1X, currY, 37);
+  
+  const batismo = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "";
+  drawBackField("DATA DE BATISMO", batismo, col2X, currY, 37);
+
+  // Assinatura (Rodapé)
+  const sigY = 46;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(25, sigY, 60, sigY); // Linha assinatura
+
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "bold");
+  doc.text("Jeziel Buarque de Gusmão", width / 2, sigY + 3, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.text("Pastor Presidente", width / 2, sigY + 5.5, { align: "center" });
+
+  doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
 };
 
 export const generateCertificate = async (member: Member, type: string, description: string) => {
@@ -139,28 +223,27 @@ export const generateCertificate = async (member: Member, type: string, descript
   const height = doc.internal.pageSize.getHeight();
 
   try {
-    if (CERTIFICATE_BG) {
-        const bg = await loadImage(CERTIFICATE_BG);
-        doc.addImage(bg, 'PNG', 0, 0, width, height);
-    } else {
-        doc.setDrawColor(37, 99, 235); // Blue Border
-        doc.setLineWidth(2);
-        doc.rect(10, 10, width - 20, height - 20);
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.5);
-        doc.rect(15, 15, width - 30, height - 30);
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 0, 0);
-        doc.line(40, 180, 110, 180);
-        doc.line(186, 180, 256, 180);
-    }
+    // 1. TENTA CARREGAR IMAGEM SE HOUVER URL (Placeholder logic removed for brevity, assuming standard drawing)
+    
+    // Borda Padrão
+    doc.setDrawColor(37, 99, 235); // Blue Border
+    doc.setLineWidth(2);
+    doc.rect(10, 10, width - 20, height - 20);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.rect(15, 15, width - 30, height - 30);
+    
+    // Linhas Assinatura
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 0, 0);
+    doc.line(40, 180, 110, 180);
+    doc.line(186, 180, 256, 180);
 
-    if (!CERTIFICATE_BG) {
-        doc.setFont("times", "bold");
-        doc.setFontSize(40);
-        doc.setTextColor(50, 50, 50);
-        doc.text("CERTIFICADO", width / 2, 50, { align: "center" });
-    }
+    // Texto
+    doc.setFont("times", "bold");
+    doc.setFontSize(40);
+    doc.setTextColor(50, 50, 50);
+    doc.text("CERTIFICADO", width / 2, 50, { align: "center" });
 
     doc.setFont("times", "bold");
     doc.setFontSize(24);
@@ -178,7 +261,6 @@ export const generateCertificate = async (member: Member, type: string, descript
     doc.setTextColor(0, 0, 0);
     doc.text(member.name, width / 2, 110, { align: "center" });
     
-    // Exibe o código abaixo do nome no certificado também
     if(member.code) {
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
@@ -205,7 +287,7 @@ export const generateCertificate = async (member: Member, type: string, descript
   
   } catch (error) {
     console.error("Erro ao gerar certificado:", error);
-    alert("Erro ao gerar PDF. Verifique se a imagem de fundo é válida.");
+    alert("Erro ao gerar PDF.");
   }
 };
 

@@ -13,6 +13,8 @@ export interface Member {
   
   // 1. Informações Pessoais
   name: string;
+  fatherName?: string; // Novo
+  motherName?: string; // Novo
   birthDate?: string;
   // Idade é calculado no front
   naturalness?: string; // Agora usado para Cidade da Naturalidade
