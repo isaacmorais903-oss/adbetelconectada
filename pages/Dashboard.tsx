@@ -25,9 +25,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Calcula membros ativos
-  const activeMembersCount = members.filter(m => m.status === MemberStatus.ACTIVE || m.status === 'Ativo').length;
-  // Calcula Visitantes (apenas para exemplo, se houver lógica de visitantes nos membros)
-  const visitorsCount = members.filter(m => m.status === MemberStatus.VISITOR || m.status === 'Visitante').length;
+  const activeMembersCount = members.filter(m => m.status === MemberStatus.ACTIVE).length;
+  // Calcula Visitantes
+  const visitorsCount = members.filter(m => m.status === MemberStatus.VISITOR).length;
 
 
   // Carregar configurações do Supabase (e fallback LocalStorage)
