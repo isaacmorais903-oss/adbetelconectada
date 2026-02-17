@@ -310,6 +310,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             <StatsCard label="Eventos Ativos" value="3" trend="Mesmo nível" trendUp={true} icon={Calendar} color="text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" />
         </div>
         
+        {/* BANNER DE BOAS-VINDAS */}
+        <div className="relative rounded-2xl overflow-hidden h-48 sm:h-64 shadow-lg group">
+            {/* Imagem de Fundo */}
+            <img 
+                src="https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=2070&auto=format&fit=crop" 
+                alt="Banner de Boas-vindas" 
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+            />
+            
+            {/* Overlay Gradiente */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-slate-900/60 to-transparent"></div>
+
+            {/* Conteúdo */}
+            <div className="absolute inset-0 flex flex-col justify-center px-8 sm:px-12 z-10">
+                <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2 shadow-sm max-w-2xl drop-shadow-md">
+                    "Nós te recebemos de braços abertos"
+                </h2>
+                <p className="text-blue-100 font-medium text-sm sm:text-base opacity-90 max-w-xl drop-shadow-sm">
+                    Bem-vindo ao painel de gestão. Acompanhe o crescimento e cuide de vidas com excelência.
+                </p>
+            </div>
+        </div>
+        
         {/* Render Social Section for Admins too */}
         <SocialMediaSection />
 
