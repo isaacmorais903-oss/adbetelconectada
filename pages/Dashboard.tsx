@@ -314,8 +314,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         <div className="relative rounded-2xl overflow-hidden h-48 sm:h-64 shadow-lg group">
             {/* Imagem de Fundo */}
             <img 
-                src="https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=2070&auto=format&fit=crop" 
-                alt="Banner de Boas-vindas" 
+                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=2069&auto=format&fit=crop" 
+                alt="Pessoas se abraçando" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             

@@ -7,6 +7,8 @@ import { supabase, isConfigured } from '../services/supabaseClient';
 
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
+const DEFAULT_ROLES = ['Membro', 'Cooperador', 'Diácono', 'Presbítero', 'Evangelista', 'Pastor', 'Missionário', 'Músico'];
+
 const formatCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
 const formatPhone = (v: string) => v.replace(/\D/g, "").replace(/^(\d{2})(\d)/g, "($1) $2").replace(/(\d)(\d{4})$/, "$1-$2").slice(0, 15);
 const formatCEP = (v: string) => v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1.$2').replace(/\.(\d{3})(\d)/, '.$1-$2').slice(0, 10);
@@ -39,11 +41,26 @@ interface MemberFormContentProps {
     isAdmin: boolean;
     availableCongregations: string[];
     onAddCongregation: (name: string) => void;
+    availableRoles: string[];
+    onAddRole: (name: string) => void;
 }
 
-const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, isAdmin, availableCongregations, onAddCongregation }) => {
+const MemberFormContent: React.FC<MemberFormContentProps> = ({ 
+    data, 
+    onChange, 
+    isAdmin, 
+    availableCongregations, 
+    onAddCongregation,
+    availableRoles,
+    onAddRole
+}) => {
+  // Estado Congregação
   const [isAddingCongregation, setIsAddingCongregation] = useState(false);
   const [newCongregationName, setNewCongregationName] = useState('');
+
+  // Estado Cargo/Função
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,20 +75,13 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
   const handleSaveCongregation = () => {
     if(newCongregationName.trim()) {
-      // Lógica para gerar o próximo número sequencial
-      // 1. Extrai todos os números existentes (ex: "001 - Sede" -> 1)
       const existingNumbers = availableCongregations
         .map(c => parseInt(c.split(' - ')[0]))
         .filter(n => !isNaN(n));
       
-      // 2. Pega o maior número e soma 1. Se não houver nenhum, começa do 2 (pois 1 é Sede)
       const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 1;
       const nextNum = maxNum + 1;
-      
-      // 3. Formata para 3 dígitos: "002"
       const formattedNum = nextNum.toString().padStart(3, '0');
-      
-      // 4. Cria o nome final: "002 - Nova Congregação"
       const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
 
       onAddCongregation(finalName);
@@ -81,12 +91,20 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
     }
   };
 
+  const handleSaveRole = () => {
+      if(newRoleName.trim()) {
+          const finalRole = newRoleName.trim();
+          onAddRole(finalRole);
+          onChange('role', finalRole);
+          setNewRoleName('');
+          setIsAddingRole(false);
+      }
+  };
+
   const handlePrintLGPD = () => {
-      // Gera um PDF do termo preenchido para este membro
       generateLgpdTerm(data as Member);
   };
 
-  // Classe padrão para inputs
   const inputClass = "w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
@@ -260,16 +278,27 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({ data, onChange, i
 
               <div className="md:col-span-3">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cargo / Função</label>
-                 <select className={inputClass} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
-                    <option value="Membro">Membro</option>
-                    <option value="Cooperador">Cooperador</option>
-                    <option value="Diácono">Diácono</option>
-                    <option value="Presbítero">Presbítero</option>
-                    <option value="Evangelista">Evangelista</option>
-                    <option value="Pastor">Pastor</option>
-                    <option value="Missionário">Missionário</option>
-                    <option value="Músico">Músico</option>
-                 </select>
+                 {isAddingRole ? (
+                     <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            autoFocus
+                            className={`${inputClass} flex-1`}
+                            placeholder="Ex: Tesoureiro"
+                            value={newRoleName}
+                            onChange={e => setNewRoleName(e.target.value)}
+                        />
+                        <button type="button" onClick={handleSaveRole} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
+                        <button type="button" onClick={() => setIsAddingRole(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
+                     </div>
+                 ) : (
+                    <div className="flex gap-2">
+                        <select className={`${inputClass} flex-1`} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
+                            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                        <button type="button" onClick={() => setIsAddingRole(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Cargo"><Plus className="w-4 h-4"/></button>
+                    </div>
+                 )}
               </div>
               <div className="md:col-span-3">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Situação (Status)</label>
@@ -372,14 +401,25 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   // LISTA DE CONGREGAÇÕES COM NUMERAÇÃO INICIAL
   const [congregations, setCongregations] = useState<string[]>(['001 - Sede']);
   
-  // Atualiza a lista de congregações baseado nos membros existentes para manter consistência da numeração
+  // LISTA DE CARGOS DISPONÍVEIS
+  const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+  
+  // Atualiza a lista de congregações e cargos baseado nos membros existentes
   useEffect(() => {
     if (members.length > 0) {
+        // Congregações
         const uniqueCongregations = new Set(congregations);
+        
+        // Cargos
+        const uniqueRoles = new Set(availableRoles);
+
         members.forEach(m => {
             if (m.congregation) uniqueCongregations.add(m.congregation);
+            if (m.role) uniqueRoles.add(m.role);
         });
+
         setCongregations(Array.from(uniqueCongregations).sort());
+        setAvailableRoles(Array.from(uniqueRoles)); // Não ordenar para manter a ordem de hierarquia sugerida no DEFAULT_ROLES no topo, ou se preferir sort, adicionar .sort()
     }
   }, [members]);
 
@@ -612,7 +652,15 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
               <button onClick={() => setShowAddModal(false)} className="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
             </div>
             <form onSubmit={handleSaveMember} className="overflow-y-auto p-8">
-               <MemberFormContent data={currentMember} onChange={(f: any, v: any) => setCurrentMember(prev => ({...prev, [f]: v}))} isAdmin={true} availableCongregations={congregations} onAddCongregation={(name: string) => setCongregations([...congregations, name])} />
+               <MemberFormContent 
+                data={currentMember} 
+                onChange={(f: any, v: any) => setCurrentMember(prev => ({...prev, [f]: v}))} 
+                isAdmin={true} 
+                availableCongregations={congregations} 
+                onAddCongregation={(name: string) => setCongregations([...congregations, name])} 
+                availableRoles={availableRoles}
+                onAddRole={(name: string) => setAvailableRoles([...availableRoles, name])}
+               />
                <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
                   <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-600">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none font-medium">
