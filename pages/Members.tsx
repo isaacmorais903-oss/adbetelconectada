@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText } from 'lucide-react';
+import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText, Lock, AlertCircle } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
-import { generateMembershipCard, generateCertificate, generateLgpdTerm } from '../services/pdfService';
+import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
+import { APP_CONFIG } from '../config';
 
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
@@ -35,6 +36,29 @@ const getCongregationCode = (congregationName: string) => {
     return '999'; // Código genérico se não seguir o padrão
 };
 
+// Texto do Termo LGPD para exibição na tela
+const LGPD_TERM_TEXT = `
+TERMO DE CONSENTIMENTO PARA TRATAMENTO DE DADOS PESSOAIS
+(Em conformidade com a Lei Geral de Proteção de Dados - Lei 13.709/2018)
+
+1. FINALIDADE DO TRATAMENTO:
+O Titular dos dados autoriza a ${APP_CONFIG.churchName} a realizar o tratamento de seus dados pessoais para as seguintes finalidades:
+- Gestão administrativa e eclesiástica de membros;
+- Comunicação interna (avisos, eventos, escalas, aniversários);
+- Histórico de sacramentos (batismos, casamentos, consagrações);
+- Controle de acesso e segurança nas dependências da igreja;
+- Registro de contribuições financeiras (dízimos e ofertas) para fins fiscais e de transparência.
+
+2. COMPARTILHAMENTO DE DADOS:
+A Igreja compromete-se a não compartilhar seus dados pessoais com terceiros para fins comerciais. O compartilhamento poderá ocorrer apenas para cumprimento de obrigações legais ou com prestadores de serviço essenciais (ex: software de gestão, contabilidade), desde que estes também garantam a segurança dos dados.
+
+3. DIREITOS DO TITULAR:
+O titular poderá, a qualquer momento, solicitar acesso, correção, atualização ou a revogação deste consentimento (exceto para dados necessários ao cumprimento de obrigações legais), mediante requerimento à secretaria da igreja.
+
+4. VIGÊNCIA:
+O consentimento é válido enquanto o titular mantiver vínculo com a instituição ou até manifestação em contrário.
+`;
+
 interface MemberFormContentProps {
     data: Partial<Member>;
     onChange: (field: keyof Member, value: any) => void;
@@ -43,6 +67,7 @@ interface MemberFormContentProps {
     onAddCongregation: (name: string) => void;
     availableRoles: string[];
     onAddRole: (name: string) => void;
+    currentUserEmail?: string;
 }
 
 const MemberFormContent: React.FC<MemberFormContentProps> = ({ 
@@ -52,7 +77,8 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
     availableCongregations, 
     onAddCongregation,
     availableRoles,
-    onAddRole
+    onAddRole,
+    currentUserEmail
 }) => {
   // Estado Congregação
   const [isAddingCongregation, setIsAddingCongregation] = useState(false);
@@ -61,6 +87,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
   // Estado Cargo/Função
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+  
+  // Verifica se o usuário logado é o dono deste perfil
+  // Compara e-mail do form com e-mail da sessão (case insensitive e trim)
+  const isOwnProfile = currentUserEmail && data.email && currentUserEmail.trim().toLowerCase() === data.email.trim().toLowerCase();
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,10 +129,6 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           setNewRoleName('');
           setIsAddingRole(false);
       }
-  };
-
-  const handlePrintLGPD = () => {
-      generateLgpdTerm(data as Member);
   };
 
   const inputClass = "w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500";
@@ -334,52 +360,115 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           </div>
       </section>
 
-      {/* 4. PRIVACIDADE E LGPD */}
+      {/* 4. PRIVACIDADE E LGPD - NOVO MODELO DE ACEITE DIGITAL */}
       <section>
           <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide border-b border-blue-100 dark:border-blue-900/50 pb-2 mb-4 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" /> 4. Privacidade e Consentimento (LGPD)
           </h4>
-          <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 text-justify">
-                  Em conformidade com a Lei Geral de Proteção de Dados (Lei 13.709/2018), a igreja necessita do consentimento do membro para armazenar dados pessoais para fins de gestão eclesiástica, comunicação e histórico de sacramentos.
-              </p>
+          
+          <div className="bg-slate-50 dark:bg-slate-700/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
               
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex-1">
-                      <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors">
-                          <input 
-                              type="checkbox" 
-                              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                              checked={data.lgpdConsent || false}
-                              onChange={e => {
-                                  onChange('lgpdConsent', e.target.checked);
-                                  onChange('lgpdConsentDate', e.target.checked ? new Date().toISOString() : undefined);
-                              }}
-                          />
-                          <div>
-                              <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">
-                                  Declaro que o membro leu e assinou o Termo de Consentimento.
-                              </span>
-                              {data.lgpdConsentDate && (
-                                  <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
-                                      Confirmado em: {new Date(data.lgpdConsentDate).toLocaleDateString('pt-BR')}
-                                  </span>
-                              )}
-                          </div>
-                      </label>
+              {/* CENÁRIO 1: JÁ DEU O ACEITE */}
+              {data.lgpdConsent ? (
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full mb-3">
+                          <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Termo de Consentimento Aceito</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Aceite registrado em: <span className="font-mono font-bold">{new Date(data.lgpdConsentDate!).toLocaleDateString('pt-BR')} às {new Date(data.lgpdConsentDate!).toLocaleTimeString('pt-BR')}</span>
+                      </p>
+                      {isAdmin && (
+                        <button 
+                             type="button"
+                             onClick={() => {
+                                 if(confirm("Deseja revogar o aceite deste membro? Ele terá que aceitar novamente.")) {
+                                     onChange('lgpdConsent', false);
+                                     onChange('lgpdConsentDate', null);
+                                 }
+                             }}
+                             className="mt-4 text-xs text-red-500 hover:text-red-700 underline"
+                        >
+                            (Admin) Revogar Aceite
+                        </button>
+                      )}
                   </div>
-                  
-                  {data.name && (
-                    <button 
-                        type="button" 
-                        onClick={handlePrintLGPD}
-                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all whitespace-nowrap"
-                    >
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        Imprimir Termo
-                    </button>
-                  )}
-              </div>
+              ) : (
+                  /* CENÁRIO 2: AINDA NÃO ACEITOU */
+                  <>
+                    {/* Se for o PRÓPRIO membro logado visualizando seu perfil */}
+                    {isOwnProfile ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                                <AlertCircle className="w-5 h-5" />
+                                <span className="font-bold text-sm">Ação Necessária: Leia e aceite os termos abaixo.</span>
+                            </div>
+
+                            {/* Caixa de Texto com o Termo */}
+                            <div className="h-64 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed shadow-inner">
+                                <pre className="whitespace-pre-wrap font-sans text-xs sm:text-sm">{LGPD_TERM_TEXT}</pre>
+                            </div>
+
+                            <div className="pt-2">
+                                <label className="flex items-center gap-3 cursor-pointer p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                                    <input 
+                                        type="checkbox" 
+                                        className="w-6 h-6 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                                        checked={data.lgpdConsent || false}
+                                        onChange={e => {
+                                            if (e.target.checked) {
+                                                if(confirm("Ao confirmar, você declara estar de acordo com o tratamento de seus dados pela igreja conforme descrito no termo.")) {
+                                                    onChange('lgpdConsent', true);
+                                                    onChange('lgpdConsentDate', new Date().toISOString());
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <div className="flex-1">
+                                        <span className="block font-bold text-slate-800 dark:text-white">
+                                            Li e concordo com o Termo de Consentimento
+                                        </span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            Ao marcar esta opção, seu aceite será registrado digitalmente no sistema.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Se for um ADMIN ou outro usuário vendo o perfil (Visualização de Status) */
+                        <div className="text-center py-6">
+                             <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                                <Lock className="w-8 h-8 text-slate-400" />
+                             </div>
+                             <h3 className="text-md font-bold text-slate-700 dark:text-slate-300">Aguardando Aceite do Membro</h3>
+                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+                                 O membro deve acessar o sistema com seu próprio login para ler e aceitar o termo digitalmente.
+                             </p>
+                             
+                             {/* Fallback Manual para Admin (Caso membro seja idoso/sem acesso) */}
+                             {isAdmin && (
+                                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-600">
+                                     <p className="text-xs font-bold text-slate-400 uppercase mb-2">Opção Manual (Exceção)</p>
+                                     <label className="flex items-center justify-center gap-2 cursor-pointer opacity-75 hover:opacity-100">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded text-slate-500"
+                                            onChange={e => {
+                                                if(confirm("ATENÇÃO: Utilize esta opção apenas se o membro assinou o termo físico e você está arquivando-o. Deseja registrar o aceite manual?")) {
+                                                    onChange('lgpdConsent', true);
+                                                    onChange('lgpdConsentDate', new Date().toISOString());
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-xs text-slate-500">Registrar aceite manualmente (Membro assinou papel)</span>
+                                     </label>
+                                 </div>
+                             )}
+                        </div>
+                    )}
+                  </>
+              )}
           </div>
       </section>
   </div>
@@ -390,9 +479,10 @@ interface MembersProps {
     privacyMode?: boolean;
     members: Member[];
     setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+    currentUserEmail?: string;
 }
 
-export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false, members, setMembers }) => {
+export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false, members, setMembers, currentUserEmail }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -660,6 +750,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                 onAddCongregation={(name: string) => setCongregations([...congregations, name])} 
                 availableRoles={availableRoles}
                 onAddRole={(name: string) => setAvailableRoles([...availableRoles, name])}
+                currentUserEmail={currentUserEmail}
                />
                <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
                   <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-3 border rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-600">Cancelar</button>

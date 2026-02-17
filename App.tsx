@@ -11,7 +11,7 @@ import { Prayers } from './pages/Prayers';
 import { Inventory } from './pages/Inventory'; 
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
-import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff } from 'lucide-react';
+import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X } from 'lucide-react';
 import { supabase, isConfigured } from './services/supabaseClient';
 
 const App: React.FC = () => {
@@ -21,6 +21,11 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [userRole, setUserRole] = useState<UserRole>('member'); // Default to member for safety
   const [isLoadingData, setIsLoadingData] = useState(false);
+  
+  // Settings / Password Modal State
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [isChangingPass, setIsChangingPass] = useState(false);
   
   // Data State
   const [members, setMembers] = useState<Member[]>([]);
@@ -152,6 +157,37 @@ const App: React.FC = () => {
     setTransactions([]);
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (newPassword.length < 6) {
+          alert("A senha deve ter pelo menos 6 caracteres.");
+          return;
+      }
+      setIsChangingPass(true);
+
+      if (!isConfigured) {
+          // Modo Demo
+          await new Promise(r => setTimeout(r, 1000));
+          alert("(Modo Demo) Senha alterada visualmente com sucesso!");
+          setShowPasswordModal(false);
+          setNewPassword('');
+          setIsChangingPass(false);
+          return;
+      }
+
+      try {
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+          alert("Senha atualizada com sucesso!");
+          setShowPasswordModal(false);
+          setNewPassword('');
+      } catch (error: any) {
+          alert("Erro ao atualizar senha: " + error.message);
+      } finally {
+          setIsChangingPass(false);
+      }
+  };
+
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
   const renderView = () => {
@@ -175,7 +211,13 @@ const App: React.FC = () => {
                   members={members} // Passando membros para contagem
                />;
       case 'members': 
-        return <Members userRole={userRole} privacyMode={privacyMode} members={members} setMembers={setMembers} />;
+        return <Members 
+                  userRole={userRole} 
+                  privacyMode={privacyMode} 
+                  members={members} 
+                  setMembers={setMembers} 
+                  currentUserEmail={session?.user?.email} 
+               />;
       case 'finance': 
         return <Finance userRole={userRole} privacyMode={privacyMode} members={members} transactions={transactions} setTransactions={setTransactions} />;
       case 'inventory': 
@@ -227,6 +269,10 @@ const App: React.FC = () => {
                  <button onClick={toggleTheme} className="p-2 bg-white/10 rounded-full">
                     {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                  </button>
+                 {/* Botão de Configurações Mobile */}
+                 <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/10 rounded-full text-white">
+                    <Settings className="w-5 h-5" />
+                 </button>
                  <button onClick={handleLogout} className="p-2 bg-white/10 rounded-full"><LogOut className="w-5 h-5" /></button>
               </div>
            </div>
@@ -269,6 +315,53 @@ const App: React.FC = () => {
 
         <BottomNav currentView={currentView} onChangeView={setCurrentView} />
       </main>
+
+      {/* MODAL GLOBAL DE ALTERAR SENHA (MOBILE) */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 relative animate-in zoom-in-95 duration-200">
+                <button 
+                    onClick={() => setShowPasswordModal(false)}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-blue-600" />
+                    Alterar Minha Senha
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                    Digite a nova senha para o seu acesso atual.
+                </p>
+
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                            Nova Senha
+                        </label>
+                        <input 
+                            type="password" 
+                            required
+                            minLength={6}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={isChangingPass || newPassword.length < 6}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        {isChangingPass ? 'Atualizando...' : 'Confirmar Nova Senha'}
+                    </button>
+                </form>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
