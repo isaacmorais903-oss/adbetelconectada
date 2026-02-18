@@ -65,8 +65,10 @@ interface MemberFormContentProps {
     isAdmin: boolean;
     availableCongregations: string[];
     onAddCongregation: (name: string) => void;
+    onRemoveCongregation: (name: string) => void;
     availableRoles: string[];
     onAddRole: (name: string) => void;
+    onRemoveRole: (name: string) => void;
     currentUserEmail?: string;
 }
 
@@ -76,8 +78,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
     isAdmin, 
     availableCongregations, 
     onAddCongregation,
+    onRemoveCongregation,
     availableRoles,
     onAddRole,
+    onRemoveRole,
     currentUserEmail
 }) => {
   // Estado Congregação
@@ -90,7 +94,6 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
   const [newRoleName, setNewRoleName] = useState('');
   
   // Verifica se o usuário logado é o dono deste perfil
-  // Compara e-mail do form com e-mail da sessão (case insensitive e trim)
   const isOwnProfile = currentUserEmail && data.email && currentUserEmail.trim().toLowerCase() === data.email.trim().toLowerCase();
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,7 +136,6 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           setIsAddingCongregation(false);
       } catch (error) {
           console.error("Erro ao salvar congregação:", error);
-          // Mesmo com erro no banco, atualiza localmente para não travar o user
           const formattedNum = (Math.floor(Math.random() * 900) + 100).toString(); // Fallback ID
           const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
           onAddCongregation(finalName);
@@ -322,6 +324,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                       <select className={`${inputClass} flex-1`} value={data.congregation || '001 - Sede'} onChange={e => onChange('congregation', e.target.value)}>
                           {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
+                      <button type="button" onClick={() => onRemoveCongregation(data.congregation || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Congregação Selecionada"><Trash2 className="w-4 h-4"/></button>
                       <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Nova Congregação"><Plus className="w-4 h-4"/></button>
                     </div>
                  )}
@@ -348,6 +351,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                         <select className={`${inputClass} flex-1`} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
                             {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
+                        <button type="button" onClick={() => onRemoveRole(data.role || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Cargo Selecionado"><Trash2 className="w-4 h-4"/></button>
                         <button type="button" onClick={() => setIsAddingRole(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Cargo"><Plus className="w-4 h-4"/></button>
                     </div>
                  )}
@@ -571,6 +575,36 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     (member.code && member.code.includes(searchTerm))
   );
 
+  const handleRemoveCongregation = async (name: string) => {
+      if (!name) return;
+      if (confirm(`Deseja remover a congregação "${name}" da lista? \nIsso não afetará membros que já estão salvos com ela, apenas remove das opções futuras.`)) {
+          // Remove do banco (locations) se existir lá
+          if (isConfigured) {
+              await supabase.from('locations').delete().eq('name', name);
+          }
+          // Remove da lista local
+          setCongregations(prev => prev.filter(c => c !== name));
+          
+          // Se o membro atual estava com ela selecionada, volta para Sede
+          if (currentMember.congregation === name) {
+              setCurrentMember(prev => ({ ...prev, congregation: '001 - Sede' }));
+          }
+      }
+  };
+
+  const handleRemoveRole = (name: string) => {
+      if (!name) return;
+      if (confirm(`Deseja remover o cargo "${name}" da lista?`)) {
+          // Remove da lista local
+          setAvailableRoles(prev => prev.filter(r => r !== name));
+          
+          // Se o membro atual estava com ele selecionado, volta para Membro
+          if (currentMember.role === name) {
+              setCurrentMember(prev => ({ ...prev, role: 'Membro' }));
+          }
+      }
+  };
+
   const openAddModal = () => {
     setIsEditing(false);
     setCurrentMember({
@@ -791,9 +825,11 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                 onChange={(f: any, v: any) => setCurrentMember(prev => ({...prev, [f]: v}))} 
                 isAdmin={true} 
                 availableCongregations={congregations} 
-                onAddCongregation={(name: string) => setCongregations([...congregations, name])} 
+                onAddCongregation={(name: string) => setCongregations([...congregations, name])}
+                onRemoveCongregation={handleRemoveCongregation}
                 availableRoles={availableRoles}
                 onAddRole={(name: string) => setAvailableRoles([...availableRoles, name])}
+                onRemoveRole={handleRemoveRole}
                 currentUserEmail={currentUserEmail}
                />
                <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
