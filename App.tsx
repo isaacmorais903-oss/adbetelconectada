@@ -9,6 +9,7 @@ import { Finance } from './pages/Finance';
 import { Locations } from './pages/Locations';
 import { Prayers } from './pages/Prayers';
 import { Inventory } from './pages/Inventory'; 
+import { Discipleship } from './pages/Discipleship'; // Importa Nova Página
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
 import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X, RefreshCw } from 'lucide-react';
@@ -191,10 +192,7 @@ const App: React.FC = () => {
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
   const renderView = () => {
-    // MODIFICAÇÃO IMPORTANTE:
     // Só bloqueia a tela se for o CARREGAMENTO INICIAL (sem membros carregados).
-    // Se já tiver membros, permite que o loading ocorra em background sem desmontar o componente atual.
-    // Isso evita que o modal de cadastro feche ao trocar de aba.
     if (isLoadingData && members.length === 0 && inventory.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -226,6 +224,11 @@ const App: React.FC = () => {
         return <Finance userRole={userRole} privacyMode={privacyMode} members={members} transactions={transactions} setTransactions={setTransactions} />;
       case 'inventory': 
         return <Inventory initialItems={inventory} items={(newItems) => setInventory(newItems)} />; 
+      
+      // NOVA ROTA
+      case 'discipleship':
+        return <Discipleship members={members} setMembers={setMembers} currentUserEmail={session?.user?.email} />;
+
       case 'announcements': return <Announcements />;
       case 'locations': return <Locations />;
       case 'prayers': return <Prayers />;
@@ -242,6 +245,7 @@ const App: React.FC = () => {
       case 'announcements': return 'Avisos';
       case 'locations': return 'Endereços';
       case 'prayers': return 'Orações';
+      case 'discipleship': return 'Discipulado';
       default: return '';
     }
   };

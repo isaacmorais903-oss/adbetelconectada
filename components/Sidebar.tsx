@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X, Sprout } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
 import { supabase, isConfigured } from '../services/supabaseClient';
@@ -72,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
     ? [
         { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
         { id: 'members', label: 'Membros', icon: Users },
+        { id: 'discipleship', label: 'Discipulado', icon: Sprout }, // NOVO ITEM
         { id: 'finance', label: 'Tesouraria', icon: DollarSign },
         { id: 'inventory', label: 'Patrimônio', icon: Package }, 
         { id: 'announcements', label: 'Avisos & Eventos', icon: Bell },

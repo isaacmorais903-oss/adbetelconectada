@@ -7,14 +7,24 @@ export enum MemberStatus {
   VISITOR = 'Visitante'
 }
 
+export interface MemberNote {
+  id: string;
+  memberId: string;
+  content: string;
+  author: string;
+  createdAt: string;
+}
+
+export type FollowUpStage = 'Novo' | 'Contato Feito' | 'Visita Agendada' | 'Em Discipulado' | 'Pronto para Batismo' | 'Integrado';
+
 export interface Member {
   id: string;
   code?: string; // Novo campo: 2026.001.001 (Ano.Sede.Sequencia)
   
   // 1. Informações Pessoais
   name: string;
-  fatherName?: string; // Novo
-  motherName?: string; // Novo
+  fatherName?: string;
+  motherName?: string;
   birthDate?: string;
   // Idade é calculado no front
   naturalness?: string; // Agora usado para Cidade da Naturalidade
@@ -47,6 +57,9 @@ export interface Member {
   // 4. Privacidade e LGPD
   lgpdConsent?: boolean; // Se o membro aceitou o termo
   lgpdConsentDate?: string; // Data do aceite
+
+  // 5. Módulo Discipulado / Acompanhamento
+  followupStage?: FollowUpStage; // Estágio na régua de crescimento
 }
 
 export enum AnnouncementType {
@@ -69,7 +82,7 @@ export interface Transaction {
   amount: number;
   type: 'income' | 'expense';
   category: string;
-  paymentMethod?: 'Pix' | 'Dinheiro' | 'Cartão' | 'Outros'; // Campo Adicionado
+  paymentMethod?: 'Pix' | 'Dinheiro' | 'Cartão' | 'Outros'; 
   date: string;
   memberId?: string;
 }
@@ -106,7 +119,7 @@ export interface InventoryItem {
   description?: string;
 }
 
-export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory';
+export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory' | 'discipleship';
 
 export interface ChurchSettings {
     id?: string;
