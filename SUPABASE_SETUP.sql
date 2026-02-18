@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS members (
   "baptismDate" DATE,
   "holySpiritBaptismDate" DATE,
   "previousChurch" TEXT,
+  "lgpdConsent" BOOLEAN DEFAULT false,
+  "lgpdConsentDate" TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -107,6 +109,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='code') THEN
         ALTER TABLE members ADD COLUMN code TEXT;
     END IF;
+    -- Members: lgpdConsent
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='lgpdConsent') THEN
+        ALTER TABLE members ADD COLUMN "lgpdConsent" BOOLEAN DEFAULT false;
+    END IF;
+    -- Members: lgpdConsentDate
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='lgpdConsentDate') THEN
+        ALTER TABLE members ADD COLUMN "lgpdConsentDate" TIMESTAMPTZ;
+    END IF;
     -- Locations: imageUrl
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='imageUrl') THEN
         ALTER TABLE locations ADD COLUMN "imageUrl" TEXT;
@@ -135,7 +145,12 @@ DROP POLICY IF EXISTS "Leitura Membros" ON members;
 DROP POLICY IF EXISTS "Escrita Membros" ON members;
 
 CREATE POLICY "Leitura Membros" ON members FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
+-- Permite escrita para Admins OU para o próprio usuário se o email bater (para auto-atualização LGPD/Foto)
+CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (
+    (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria') 
+    OR 
+    (email = auth.jwt() ->> 'email')
+);
 
 -- TABLE: TRANSACTIONS
 DROP POLICY IF EXISTS "Admin Financeiro" ON transactions;

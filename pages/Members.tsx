@@ -417,7 +417,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                                         checked={data.lgpdConsent || false}
                                         onChange={e => {
                                             if (e.target.checked) {
-                                                if(confirm("Ao confirmar, você declara estar de acordo com o tratamento de seus dados pela igreja conforme descrito no termo.")) {
+                                                if(confirm("Ao confirmar, você declara estar de acordo com o tratamento de seus dados pela igreja conforme descrito no termo. O sistema registrará a data e hora exata deste aceite.")) {
                                                     onChange('lgpdConsent', true);
                                                     onChange('lgpdConsentDate', new Date().toISOString());
                                                 }
@@ -429,7 +429,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                                             Li e concordo com o Termo de Consentimento
                                         </span>
                                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                                            Ao marcar esta opção, seu aceite será registrado digitalmente no sistema.
+                                            Ao marcar esta opção, seu aceite será registrado com um Carimbo de Tempo digital.
                                         </span>
                                     </div>
                                 </label>
