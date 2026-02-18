@@ -11,7 +11,7 @@ import { Prayers } from './pages/Prayers';
 import { Inventory } from './pages/Inventory'; 
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
-import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X } from 'lucide-react';
+import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X, RefreshCw } from 'lucide-react';
 import { supabase, isConfigured } from './services/supabaseClient';
 
 const App: React.FC = () => {
@@ -191,7 +191,11 @@ const App: React.FC = () => {
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
   const renderView = () => {
-    if (isLoadingData) {
+    // MODIFICAÇÃO IMPORTANTE:
+    // Só bloqueia a tela se for o CARREGAMENTO INICIAL (sem membros carregados).
+    // Se já tiver membros, permite que o loading ocorra em background sem desmontar o componente atual.
+    // Isso evita que o modal de cadastro feche ao trocar de aba.
+    if (isLoadingData && members.length === 0 && inventory.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -249,7 +253,7 @@ const App: React.FC = () => {
         isDarkMode={theme === 'dark'} onToggleTheme={toggleTheme} privacyMode={privacyMode} onTogglePrivacy={togglePrivacy}
       />
 
-      <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0">
+      <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0 relative">
         {/* Mobile Header */}
         <header className="md:hidden bg-slate-900 dark:bg-black text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg relative z-10">
            <div className="flex justify-between items-center mb-6">
@@ -308,6 +312,14 @@ const App: React.FC = () => {
              </div>
           </div>
         </header>
+
+        {/* INDICADOR DISCRETO DE SINCRONIZAÇÃO EM BACKGROUND */}
+        {isLoadingData && members.length > 0 && (
+           <div className="fixed bottom-20 md:bottom-6 right-4 md:right-8 bg-slate-900/90 text-white text-xs font-medium px-4 py-2 rounded-full shadow-xl z-50 animate-pulse flex items-center gap-2 backdrop-blur-md">
+               <RefreshCw className="w-3 h-3 animate-spin" />
+               Sincronizando...
+           </div>
+        )}
 
         <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
           {renderView()}

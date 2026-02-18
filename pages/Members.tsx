@@ -83,6 +83,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
   // Estado Congregação
   const [isAddingCongregation, setIsAddingCongregation] = useState(false);
   const [newCongregationName, setNewCongregationName] = useState('');
+  const [savingCongregation, setSavingCongregation] = useState(false);
 
   // Estado Cargo/Função
   const [isAddingRole, setIsAddingRole] = useState(false);
@@ -103,21 +104,44 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
     }
   };
 
-  const handleSaveCongregation = () => {
+  const handleSaveCongregation = async () => {
     if(newCongregationName.trim()) {
-      const existingNumbers = availableCongregations
-        .map(c => parseInt(c.split(' - ')[0]))
-        .filter(n => !isNaN(n));
-      
-      const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 1;
-      const nextNum = maxNum + 1;
-      const formattedNum = nextNum.toString().padStart(3, '0');
-      const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
+      setSavingCongregation(true);
+      try {
+          const existingNumbers = availableCongregations
+            .map(c => parseInt(c.split(' - ')[0]))
+            .filter(n => !isNaN(n));
+          
+          const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 1;
+          const nextNum = maxNum + 1;
+          const formattedNum = nextNum.toString().padStart(3, '0');
+          const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
 
-      onAddCongregation(finalName);
-      onChange('congregation', finalName);
-      setNewCongregationName('');
-      setIsAddingCongregation(false);
+          // Tenta salvar na tabela 'locations' para persistir mesmo sem membros vinculados
+          if (isConfigured) {
+              await supabase.from('locations').insert({
+                  name: finalName,
+                  type: 'Congregação',
+                  address: 'Endereço Pendente', 
+                  city: 'Cidade Pendente'
+              });
+          }
+
+          onAddCongregation(finalName);
+          onChange('congregation', finalName);
+          setNewCongregationName('');
+          setIsAddingCongregation(false);
+      } catch (error) {
+          console.error("Erro ao salvar congregação:", error);
+          // Mesmo com erro no banco, atualiza localmente para não travar o user
+          const formattedNum = (Math.floor(Math.random() * 900) + 100).toString(); // Fallback ID
+          const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
+          onAddCongregation(finalName);
+          onChange('congregation', finalName);
+          setIsAddingCongregation(false);
+      } finally {
+          setSavingCongregation(false);
+      }
     }
   };
 
@@ -288,7 +312,9 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                         value={newCongregationName}
                         onChange={e => setNewCongregationName(e.target.value)}
                       />
-                      <button type="button" onClick={handleSaveCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
+                      <button type="button" onClick={handleSaveCongregation} disabled={savingCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 disabled:opacity-50" title="Confirmar">
+                          {savingCongregation ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <CheckCircle className="w-4 h-4"/>}
+                      </button>
                       <button type="button" onClick={() => setIsAddingCongregation(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
                     </div>
                  ) : (
@@ -299,7 +325,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                       <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Nova Congregação"><Plus className="w-4 h-4"/></button>
                     </div>
                  )}
-                 <p className="text-[10px] text-slate-400 mt-1">O sistema atribui numeração automática (001, 002...) para novas congregações.</p>
+                 <p className="text-[10px] text-slate-400 mt-1">As congregações criadas são salvas automaticamente na lista de endereços.</p>
               </div>
 
               <div className="md:col-span-3">
@@ -494,24 +520,42 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   // LISTA DE CARGOS DISPONÍVEIS
   const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
   
-  // Atualiza a lista de congregações e cargos baseado nos membros existentes
+  // Atualiza a lista de congregações e cargos baseado nos membros existentes E tabela de Locations
   useEffect(() => {
-    if (members.length > 0) {
-        // Congregações
+    const loadCongregations = async () => {
         const uniqueCongregations = new Set(congregations);
-        
-        // Cargos
         const uniqueRoles = new Set(availableRoles);
 
-        members.forEach(m => {
-            if (m.congregation) uniqueCongregations.add(m.congregation);
-            if (m.role) uniqueRoles.add(m.role);
-        });
+        // 1. Carrega congregações dos membros já salvos
+        if (members.length > 0) {
+            members.forEach(m => {
+                if (m.congregation) uniqueCongregations.add(m.congregation);
+                if (m.role) uniqueRoles.add(m.role);
+            });
+        }
+
+        // 2. Carrega congregações da tabela de Locais (Para não perder as que não têm membros)
+        if (isConfigured) {
+            try {
+                const { data } = await supabase.from('locations').select('name');
+                if (data) {
+                    data.forEach((loc: any) => {
+                        if (loc.name && /\d{3}\s-\s/.test(loc.name)) { // Filtra apenas as que seguem padrão "000 - Nome"
+                             uniqueCongregations.add(loc.name);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao carregar locais:", error);
+            }
+        }
 
         setCongregations(Array.from(uniqueCongregations).sort());
-        setAvailableRoles(Array.from(uniqueRoles)); // Não ordenar para manter a ordem de hierarquia sugerida no DEFAULT_ROLES no topo, ou se preferir sort, adicionar .sort()
-    }
-  }, [members]);
+        setAvailableRoles(Array.from(uniqueRoles));
+    };
+
+    loadCongregations();
+  }, [members]); // Recarrega se membros mudar
 
   const [isSaving, setIsSaving] = useState(false);
 
