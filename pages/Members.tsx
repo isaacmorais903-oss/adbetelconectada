@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText, Lock, AlertCircle } from 'lucide-react';
+import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText, Lock, AlertCircle, Users } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
 import { generateMembershipCard, generateCertificate } from '../services/pdfService';
 import { supabase, isConfigured } from '../services/supabaseClient';
@@ -9,6 +9,7 @@ import { APP_CONFIG } from '../config';
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 const DEFAULT_ROLES = ['Membro', 'Cooperador', 'Diácono', 'Presbítero', 'Evangelista', 'Pastor', 'Missionário', 'Músico'];
+const DEFAULT_MINISTRIES = ['Membro', 'Louvor', 'Infantil', 'Jovens', 'Varões', 'Círculo de Oração', 'Ensino', 'Recepção', 'Mídia', 'Ação Social'];
 
 const formatCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
 const formatPhone = (v: string) => v.replace(/\D/g, "").replace(/^(\d{2})(\d)/g, "($1) $2").replace(/(\d)(\d{4})$/, "$1-$2").slice(0, 15);
@@ -69,6 +70,9 @@ interface MemberFormContentProps {
     availableRoles: string[];
     onAddRole: (name: string) => void;
     onRemoveRole: (name: string) => void;
+    availableMinistries: string[];
+    onAddMinistry: (name: string) => void;
+    onRemoveMinistry: (name: string) => void;
     currentUserEmail?: string;
 }
 
@@ -82,6 +86,9 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
     availableRoles,
     onAddRole,
     onRemoveRole,
+    availableMinistries,
+    onAddMinistry,
+    onRemoveMinistry,
     currentUserEmail
 }) => {
   // Estado Congregação
@@ -92,6 +99,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
   // Estado Cargo/Função
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+
+  // Estado Ministério
+  const [isAddingMinistry, setIsAddingMinistry] = useState(false);
+  const [newMinistryName, setNewMinistryName] = useState('');
   
   // Verifica se o usuário logado é o dono deste perfil
   const isOwnProfile = currentUserEmail && data.email && currentUserEmail.trim().toLowerCase() === data.email.trim().toLowerCase();
@@ -154,6 +165,16 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           onChange('role', finalRole);
           setNewRoleName('');
           setIsAddingRole(false);
+      }
+  };
+
+  const handleSaveMinistry = () => {
+      if(newMinistryName.trim()) {
+          const finalMinistry = newMinistryName.trim();
+          onAddMinistry(finalMinistry);
+          onChange('ministry', finalMinistry);
+          setNewMinistryName('');
+          setIsAddingMinistry(false);
       }
   };
 
@@ -367,8 +388,30 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               </div>
 
               <div className="md:col-span-6">
-                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ministério / Departamento</label>
-                 <input className={inputClass} value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)} placeholder="Ex: Louvor, Infantil, Jovens" />
+                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Users className="w-3 h-3 text-blue-500"/> Ministério / Departamento</label>
+                 {isAddingMinistry ? (
+                     <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            autoFocus
+                            className={`${inputClass} flex-1`}
+                            placeholder="Ex: Louvor, Infantil"
+                            value={newMinistryName}
+                            onChange={e => setNewMinistryName(e.target.value)}
+                        />
+                        <button type="button" onClick={handleSaveMinistry} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
+                        <button type="button" onClick={() => setIsAddingMinistry(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
+                     </div>
+                 ) : (
+                    <div className="flex gap-2">
+                        <select className={`${inputClass} flex-1`} value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)}>
+                            <option value="">Selecione ou adicione...</option>
+                            {availableMinistries.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <button type="button" onClick={() => onRemoveMinistry(data.ministry || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Ministério Selecionado"><Trash2 className="w-4 h-4"/></button>
+                        <button type="button" onClick={() => setIsAddingMinistry(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Ministério"><Plus className="w-4 h-4"/></button>
+                    </div>
+                 )}
               </div>
               <div className="md:col-span-6">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
@@ -523,18 +566,23 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   
   // LISTA DE CARGOS DISPONÍVEIS
   const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+
+  // LISTA DE MINISTÉRIOS DISPONÍVEIS
+  const [availableMinistries, setAvailableMinistries] = useState<string[]>(DEFAULT_MINISTRIES);
   
-  // Atualiza a lista de congregações e cargos baseado nos membros existentes E tabela de Locations
+  // Atualiza a lista de congregações, cargos e ministérios baseado nos membros existentes E tabela de Locations
   useEffect(() => {
     const loadCongregations = async () => {
         const uniqueCongregations = new Set(congregations);
         const uniqueRoles = new Set(availableRoles);
+        const uniqueMinistries = new Set(availableMinistries);
 
-        // 1. Carrega congregações dos membros já salvos
+        // 1. Carrega dados dos membros já salvos
         if (members.length > 0) {
             members.forEach(m => {
                 if (m.congregation) uniqueCongregations.add(m.congregation);
                 if (m.role) uniqueRoles.add(m.role);
+                if (m.ministry) uniqueMinistries.add(m.ministry);
             });
         }
 
@@ -556,6 +604,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
 
         setCongregations(Array.from(uniqueCongregations).sort());
         setAvailableRoles(Array.from(uniqueRoles));
+        setAvailableMinistries(Array.from(uniqueMinistries));
     };
 
     loadCongregations();
@@ -603,6 +652,19 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
               setCurrentMember(prev => ({ ...prev, role: 'Membro' }));
           }
       }
+  };
+
+  const handleRemoveMinistry = (name: string) => {
+    if (!name) return;
+    if (confirm(`Deseja remover o ministério "${name}" da lista?`)) {
+        // Remove da lista local
+        setAvailableMinistries(prev => prev.filter(m => m !== name));
+        
+        // Se o membro atual estava com ele selecionado, limpa o campo
+        if (currentMember.ministry === name) {
+            setCurrentMember(prev => ({ ...prev, ministry: '' }));
+        }
+    }
   };
 
   const openAddModal = () => {
@@ -830,6 +892,9 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                 availableRoles={availableRoles}
                 onAddRole={(name: string) => setAvailableRoles([...availableRoles, name])}
                 onRemoveRole={handleRemoveRole}
+                availableMinistries={availableMinistries}
+                onAddMinistry={(name: string) => setAvailableMinistries([...availableMinistries, name])}
+                onRemoveMinistry={handleRemoveMinistry}
                 currentUserEmail={currentUserEmail}
                />
                <div className="flex gap-4 mt-8 pt-4 border-t border-slate-100 dark:border-slate-700">
