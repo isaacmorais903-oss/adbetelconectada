@@ -48,6 +48,13 @@ CREATE TABLE IF NOT EXISTS member_notes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Tabela Nova: Ministérios (Para persistir a lista de opções)
+CREATE TABLE IF NOT EXISTS ministries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   description TEXT NOT NULL,
@@ -146,6 +153,7 @@ $$;
 -- 3. HABILITAR RLS (Row Level Security)
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE member_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ministries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
@@ -169,6 +177,12 @@ CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (
 -- TABLE: MEMBER_NOTES (Apenas Admins podem ver e criar notas)
 DROP POLICY IF EXISTS "Admin Notes" ON member_notes;
 CREATE POLICY "Admin Notes" ON member_notes FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
+
+-- TABLE: MINISTRIES
+DROP POLICY IF EXISTS "Leitura Ministerios" ON ministries;
+DROP POLICY IF EXISTS "Escrita Ministerios" ON ministries;
+CREATE POLICY "Leitura Ministerios" ON ministries FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Escrita Ministerios" ON ministries FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 
 -- TABLE: TRANSACTIONS
 DROP POLICY IF EXISTS "Admin Financeiro" ON transactions;

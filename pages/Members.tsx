@@ -103,6 +103,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
   // Estado Ministério
   const [isAddingMinistry, setIsAddingMinistry] = useState(false);
   const [newMinistryName, setNewMinistryName] = useState('');
+  const [savingMinistry, setSavingMinistry] = useState(false);
   
   // Verifica se o usuário logado é o dono deste perfil
   const isOwnProfile = currentUserEmail && data.email && currentUserEmail.trim().toLowerCase() === data.email.trim().toLowerCase();
@@ -168,13 +169,30 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
       }
   };
 
-  const handleSaveMinistry = () => {
+  const handleSaveMinistry = async () => {
       if(newMinistryName.trim()) {
-          const finalMinistry = newMinistryName.trim();
-          onAddMinistry(finalMinistry);
-          onChange('ministry', finalMinistry);
-          setNewMinistryName('');
-          setIsAddingMinistry(false);
+          setSavingMinistry(true);
+          try {
+              const finalMinistry = newMinistryName.trim();
+              
+              if(isConfigured) {
+                  // Salva na tabela ministries para persistir
+                  await supabase.from('ministries').insert({ name: finalMinistry });
+              }
+              
+              onAddMinistry(finalMinistry);
+              onChange('ministry', finalMinistry);
+              setNewMinistryName('');
+              setIsAddingMinistry(false);
+          } catch (error) {
+               console.error("Erro ao salvar ministério:", error);
+               // Mesmo com erro (ex: duplicidade), tentamos adicionar localmente
+               onAddMinistry(newMinistryName.trim());
+               onChange('ministry', newMinistryName.trim());
+               setIsAddingMinistry(false);
+          } finally {
+              setSavingMinistry(false);
+          }
       }
   };
 
@@ -399,7 +417,9 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                             value={newMinistryName}
                             onChange={e => setNewMinistryName(e.target.value)}
                         />
-                        <button type="button" onClick={handleSaveMinistry} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
+                        <button type="button" onClick={handleSaveMinistry} disabled={savingMinistry} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 disabled:opacity-50" title="Confirmar">
+                            {savingMinistry ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <CheckCircle className="w-4 h-4"/>}
+                        </button>
                         <button type="button" onClick={() => setIsAddingMinistry(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
                      </div>
                  ) : (
@@ -570,14 +590,14 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   // LISTA DE MINISTÉRIOS DISPONÍVEIS
   const [availableMinistries, setAvailableMinistries] = useState<string[]>(DEFAULT_MINISTRIES);
   
-  // Atualiza a lista de congregações, cargos e ministérios baseado nos membros existentes E tabela de Locations
+  // Atualiza a lista de congregações, cargos e ministérios baseado nos membros existentes E tabela de Locations/Ministries
   useEffect(() => {
-    const loadCongregations = async () => {
+    const loadLists = async () => {
         const uniqueCongregations = new Set(congregations);
         const uniqueRoles = new Set(availableRoles);
         const uniqueMinistries = new Set(availableMinistries);
 
-        // 1. Carrega dados dos membros já salvos
+        // 1. Carrega dados dos membros já salvos (para garantir que os usados apareçam)
         if (members.length > 0) {
             members.forEach(m => {
                 if (m.congregation) uniqueCongregations.add(m.congregation);
@@ -586,29 +606,36 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             });
         }
 
-        // 2. Carrega congregações da tabela de Locais (Para não perder as que não têm membros)
         if (isConfigured) {
             try {
-                const { data } = await supabase.from('locations').select('name');
-                if (data) {
-                    data.forEach((loc: any) => {
-                        if (loc.name && /\d{3}\s-\s/.test(loc.name)) { // Filtra apenas as que seguem padrão "000 - Nome"
+                // 2. Carrega congregações da tabela de Locais
+                const { data: locData } = await supabase.from('locations').select('name');
+                if (locData) {
+                    locData.forEach((loc: any) => {
+                        if (loc.name && /\d{3}\s-\s/.test(loc.name)) {
                              uniqueCongregations.add(loc.name);
                         }
                     });
                 }
+
+                // 3. Carrega Ministérios da tabela de Ministries
+                const { data: minData } = await supabase.from('ministries').select('name');
+                if (minData) {
+                    minData.forEach((m: any) => uniqueMinistries.add(m.name));
+                }
+
             } catch (error) {
-                console.error("Erro ao carregar locais:", error);
+                console.error("Erro ao carregar listas:", error);
             }
         }
 
         setCongregations(Array.from(uniqueCongregations).sort());
         setAvailableRoles(Array.from(uniqueRoles));
-        setAvailableMinistries(Array.from(uniqueMinistries));
+        setAvailableMinistries(Array.from(uniqueMinistries).sort());
     };
 
-    loadCongregations();
-  }, [members]); // Recarrega se membros mudar
+    loadLists();
+  }, [members]); 
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -627,14 +654,10 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const handleRemoveCongregation = async (name: string) => {
       if (!name) return;
       if (confirm(`Deseja remover a congregação "${name}" da lista? \nIsso não afetará membros que já estão salvos com ela, apenas remove das opções futuras.`)) {
-          // Remove do banco (locations) se existir lá
           if (isConfigured) {
               await supabase.from('locations').delete().eq('name', name);
           }
-          // Remove da lista local
           setCongregations(prev => prev.filter(c => c !== name));
-          
-          // Se o membro atual estava com ela selecionada, volta para Sede
           if (currentMember.congregation === name) {
               setCurrentMember(prev => ({ ...prev, congregation: '001 - Sede' }));
           }
@@ -644,23 +667,21 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const handleRemoveRole = (name: string) => {
       if (!name) return;
       if (confirm(`Deseja remover o cargo "${name}" da lista?`)) {
-          // Remove da lista local
           setAvailableRoles(prev => prev.filter(r => r !== name));
-          
-          // Se o membro atual estava com ele selecionado, volta para Membro
           if (currentMember.role === name) {
               setCurrentMember(prev => ({ ...prev, role: 'Membro' }));
           }
       }
   };
 
-  const handleRemoveMinistry = (name: string) => {
+  const handleRemoveMinistry = async (name: string) => {
     if (!name) return;
     if (confirm(`Deseja remover o ministério "${name}" da lista?`)) {
-        // Remove da lista local
+        if (isConfigured) {
+             await supabase.from('ministries').delete().eq('name', name);
+        }
         setAvailableMinistries(prev => prev.filter(m => m !== name));
         
-        // Se o membro atual estava com ele selecionado, limpa o campo
         if (currentMember.ministry === name) {
             setCurrentMember(prev => ({ ...prev, ministry: '' }));
         }
