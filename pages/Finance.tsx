@@ -289,6 +289,95 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
     });
   };
 
+  // ---------------- MEMBER VIEW (CONTRIBUIÇÃO) ----------------
+  if (userRole !== 'admin') {
+      return (
+          <div className="space-y-6">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+                  <h2 className="text-2xl font-bold mb-2">Minha Contribuição</h2>
+                  <p className="opacity-90 max-w-xl">
+                      "Cada um contribua segundo propôs no seu coração; não com tristeza, ou por necessidade; porque Deus ama ao que dá com alegria." (2 Coríntios 9:7)
+                  </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* PIX CARD */}
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3 mb-4">
+                          <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full text-emerald-600 dark:text-emerald-400">
+                              <DollarSign className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Dízimos e Ofertas via Pix</h3>
+                      </div>
+                      
+                      <div className="space-y-4">
+                          <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 text-center">
+                              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">Chave Pix (CNPJ/Email/Celular)</p>
+                              <p className="text-lg font-mono font-bold text-slate-800 dark:text-white select-all">
+                                  pix@adbetel.com.br
+                              </p>
+                          </div>
+                          <button 
+                            onClick={() => {
+                                navigator.clipboard.writeText('pix@adbetel.com.br');
+                                alert('Chave Pix copiada!');
+                            }}
+                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+                          >
+                              Copiar Chave Pix
+                          </button>
+                      </div>
+                  </div>
+
+                  {/* BANK ACCOUNT CARD */}
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3 mb-4">
+                          <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full text-blue-600 dark:text-blue-400">
+                              <FileText className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Transferência Bancária</h3>
+                      </div>
+                      
+                      <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                          <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                              <span>Banco:</span>
+                              <span className="font-bold">Banco do Brasil (001)</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                              <span>Agência:</span>
+                              <span className="font-bold">1234-5</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                              <span>Conta Corrente:</span>
+                              <span className="font-bold">998877-X</span>
+                          </div>
+                          <div className="flex justify-between pt-1">
+                              <span>Favorecido:</span>
+                              <span className="font-bold">Igreja Evangélica AD Betel</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              
+              {/* HISTÓRICO PESSOAL (SE HOUVER) */}
+              <div className="mt-8">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 px-1">Meu Histórico de Contribuições</h3>
+                  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      {/* Aqui filtraríamos as transações onde memberId == usuario atual. 
+                          Como o backend RLS já filtra, podemos usar transactions direto se o fetch foi feito corretamente. 
+                          Porém, no App.tsx o fetch de transactions é geral. Idealmente, para membros, deveríamos buscar apenas as suas.
+                          Vamos assumir que transactions está vazio ou filtrado. Se vazio, mostra mensagem.
+                      */}
+                      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                          <p>Seu histórico de contribuições aparecerá aqui em breve.</p>
+                          <p className="text-xs mt-1 opacity-70">Para recibos detalhados, procure a tesouraria.</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}

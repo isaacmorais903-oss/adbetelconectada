@@ -183,6 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
                 <Settings className="w-4 h-4" />
             </button>
+            {userRole === 'admin' && (
              <button 
                 onClick={onToggleRole}
                 className="flex items-center justify-center p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-all gap-1"
@@ -191,6 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-[10px] font-bold">{userRole === 'admin' ? 'ADM' : 'USR'}</span>
                 <RefreshCw className="w-3 h-3" />
             </button>
+            )}
         </div>
 
         <div className="flex items-center gap-3 px-2">
