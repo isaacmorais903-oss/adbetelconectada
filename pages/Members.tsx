@@ -64,6 +64,7 @@ interface MemberFormContentProps {
     data: Partial<Member>;
     onChange: (field: keyof Member, value: any) => void;
     isAdmin: boolean;
+    readOnly?: boolean;
     availableCongregations: string[];
     onAddCongregation: (name: string) => void;
     onRemoveCongregation: (name: string) => void;
@@ -80,6 +81,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
     data, 
     onChange, 
     isAdmin, 
+    readOnly = false,
     availableCongregations, 
     onAddCongregation,
     onRemoveCongregation,
@@ -196,7 +198,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
       }
   };
 
-  const inputClass = "w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500";
+  const inputClass = `w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 ${readOnly ? 'opacity-70 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''}`;
 
   return (
   <div className="space-y-8">
@@ -213,10 +215,12 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                     </div>
                 )}
             </div>
-            <label htmlFor="photo-upload" className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110">
-                <Camera className="w-5 h-5" />
-                <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-            </label>
+            {!readOnly && (
+                <label htmlFor="photo-upload" className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110">
+                    <Camera className="w-5 h-5" />
+                    <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                </label>
+            )}
         </div>
         {data.code && (
             <div className="mt-3 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-xs font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
@@ -234,36 +238,36 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
-                  <input type="text" className={inputClass} 
+                  <input type="text" className={inputClass} disabled={readOnly}
                       value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
-                  <input type="date" className={inputClass} 
+                  <input type="date" className={inputClass} disabled={readOnly}
                       value={data.birthDate || ''} onChange={e => onChange('birthDate', e.target.value)} />
               </div>
 
               {/* FILIAÇÃO */}
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome da Mãe</label>
-                  <input className={inputClass} value={data.motherName || ''} onChange={e => onChange('motherName', e.target.value)} placeholder="Opcional para carteirinha" />
+                  <input className={inputClass} disabled={readOnly} value={data.motherName || ''} onChange={e => onChange('motherName', e.target.value)} placeholder="Opcional para carteirinha" />
               </div>
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome do Pai</label>
-                  <input className={inputClass} value={data.fatherName || ''} onChange={e => onChange('fatherName', e.target.value)} placeholder="Opcional para carteirinha" />
+                  <input className={inputClass} disabled={readOnly} value={data.fatherName || ''} onChange={e => onChange('fatherName', e.target.value)} placeholder="Opcional para carteirinha" />
               </div>
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CPF</label>
-                  <input className={inputClass} value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />
+                  <input className={inputClass} disabled={readOnly} value={data.cpf || ''} onChange={e => onChange('cpf', formatCPF(e.target.value))} placeholder="000.000.000-00" />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RG</label>
-                  <input className={inputClass} value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
+                  <input className={inputClass} disabled={readOnly} value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado Civil</label>
-                   <select className={inputClass} value={data.maritalStatus || 'Solteiro(a)'} onChange={e => onChange('maritalStatus', e.target.value)}>
+                   <select className={inputClass} disabled={readOnly} value={data.maritalStatus || 'Solteiro(a)'} onChange={e => onChange('maritalStatus', e.target.value)}>
                       <option value="Solteiro(a)">Solteiro(a)</option>
                       <option value="Casado(a)">Casado(a)</option>
                       <option value="Viúvo(a)">Viúvo(a)</option>
@@ -273,15 +277,15 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
-                  <input className={inputClass} value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
+                  <input className={inputClass} disabled={readOnly} value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
               </div>
               <div className="md:col-span-5">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
-                  <input className={inputClass} value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
+                  <input className={inputClass} disabled={readOnly} value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
               </div>
               <div className="md:col-span-3">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
-                  <select className={inputClass} value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
+                  <select className={inputClass} disabled={readOnly} value={data.naturalnessState || ''} onChange={e => onChange('naturalnessState', e.target.value)}>
                      <option value="">Selecione</option>
                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
@@ -291,7 +295,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Profissão</label>
                   <div className="relative">
                       <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                      <input className={`${inputClass} pl-9`} value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
+                      <input className={`${inputClass} pl-9`} disabled={readOnly} value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
                   </div>
               </div>
           </div>
@@ -305,29 +309,29 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone / WhatsApp</label>
-                  <input className={inputClass} value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" />
+                  <input className={inputClass} disabled={readOnly} value={data.phone || ''} onChange={e => onChange('phone', formatPhone(e.target.value))} placeholder="(00) 00000-0000" />
               </div>
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</label>
-                  <input type="email" className={inputClass} value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
+                  <input type="email" className={inputClass} disabled={readOnly} value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
               </div>
               
               <div className="md:col-span-3">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CEP</label>
-                  <input className={inputClass} value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} />
+                  <input className={inputClass} disabled={readOnly} value={data.postalCode || ''} onChange={e => onChange('postalCode', formatCEP(e.target.value))} />
               </div>
               <div className="md:col-span-9">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
-                  <input className={inputClass} value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
+                  <input className={inputClass} disabled={readOnly} value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
               </div>
               
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade</label>
-                  <input className={inputClass} value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
+                  <input className={inputClass} disabled={readOnly} value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado (UF)</label>
-                  <select className={inputClass} value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
+                  <select className={inputClass} disabled={readOnly} value={data.state || ''} onChange={e => onChange('state', e.target.value)}>
                      <option value="">Selecione</option>
                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
@@ -360,14 +364,18 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                     </div>
                  ) : (
                     <div className="flex gap-2">
-                      <select className={`${inputClass} flex-1`} value={data.congregation || '001 - Sede'} onChange={e => onChange('congregation', e.target.value)}>
+                      <select className={`${inputClass} flex-1`} disabled={readOnly} value={data.congregation || '001 - Sede'} onChange={e => onChange('congregation', e.target.value)}>
                           {availableCongregations.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <button type="button" onClick={() => onRemoveCongregation(data.congregation || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Congregação Selecionada"><Trash2 className="w-4 h-4"/></button>
-                      <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Nova Congregação"><Plus className="w-4 h-4"/></button>
+                      {!readOnly && (
+                        <>
+                            <button type="button" onClick={() => onRemoveCongregation(data.congregation || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Congregação Selecionada"><Trash2 className="w-4 h-4"/></button>
+                            <button type="button" onClick={() => setIsAddingCongregation(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Nova Congregação"><Plus className="w-4 h-4"/></button>
+                        </>
+                      )}
                     </div>
                  )}
-                 <p className="text-[10px] text-slate-400 mt-1">As congregações criadas são salvas automaticamente na lista de endereços.</p>
+                 {!readOnly && <p className="text-[10px] text-slate-400 mt-1">As congregações criadas são salvas automaticamente na lista de endereços.</p>}
               </div>
 
               <div className="md:col-span-3">
@@ -387,17 +395,21 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                      </div>
                  ) : (
                     <div className="flex gap-2">
-                        <select className={`${inputClass} flex-1`} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
+                        <select className={`${inputClass} flex-1`} disabled={readOnly} value={data.role || 'Membro'} onChange={e => onChange('role', e.target.value)}>
                             {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
-                        <button type="button" onClick={() => onRemoveRole(data.role || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Cargo Selecionado"><Trash2 className="w-4 h-4"/></button>
-                        <button type="button" onClick={() => setIsAddingRole(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Cargo"><Plus className="w-4 h-4"/></button>
+                        {!readOnly && (
+                            <>
+                                <button type="button" onClick={() => onRemoveRole(data.role || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Cargo Selecionado"><Trash2 className="w-4 h-4"/></button>
+                                <button type="button" onClick={() => setIsAddingRole(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Cargo"><Plus className="w-4 h-4"/></button>
+                            </>
+                        )}
                     </div>
                  )}
               </div>
               <div className="md:col-span-3">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Situação (Status)</label>
-                 <select className={inputClass} value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
+                 <select className={inputClass} disabled={readOnly} value={data.status || 'Ativo'} onChange={e => onChange('status', e.target.value)}>
                     <option value="Ativo">Ativo</option>
                     <option value="Inativo">Inativo</option>
                     <option value="Visitante">Visitante</option>
@@ -424,31 +436,35 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                      </div>
                  ) : (
                     <div className="flex gap-2">
-                        <select className={`${inputClass} flex-1`} value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)}>
+                        <select className={`${inputClass} flex-1`} disabled={readOnly} value={data.ministry || ''} onChange={e => onChange('ministry', e.target.value)}>
                             <option value="">Selecione ou adicione...</option>
                             {availableMinistries.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
-                        <button type="button" onClick={() => onRemoveMinistry(data.ministry || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Ministério Selecionado"><Trash2 className="w-4 h-4"/></button>
-                        <button type="button" onClick={() => setIsAddingMinistry(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Ministério"><Plus className="w-4 h-4"/></button>
+                        {!readOnly && (
+                            <>
+                                <button type="button" onClick={() => onRemoveMinistry(data.ministry || '')} className="bg-red-50 dark:bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800" title="Excluir Ministério Selecionado"><Trash2 className="w-4 h-4"/></button>
+                                <button type="button" onClick={() => setIsAddingMinistry(true)} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg hover:bg-blue-200" title="Adicionar Novo Ministério"><Plus className="w-4 h-4"/></button>
+                            </>
+                        )}
                     </div>
                  )}
               </div>
               <div className="md:col-span-6">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
-                 <input className={inputClass} value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
+                 <input className={inputClass} disabled={readOnly} value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
               </div>
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Admissão</label>
-                  <input type="date" className={inputClass} value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
+                  <input type="date" className={inputClass} disabled={readOnly} value={data.joinedAt || ''} onChange={e => onChange('joinedAt', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Droplet className="w-3 h-3 text-blue-500"/> Batismo nas Águas</label>
-                  <input type="date" className={inputClass} value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
+                  <input type="date" className={inputClass} disabled={readOnly} value={data.baptismDate || ''} onChange={e => onChange('baptismDate', e.target.value)} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-500"/> Batismo Espírito Santo</label>
-                  <input type="date" className={inputClass} value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
+                  <input type="date" className={inputClass} disabled={readOnly} value={data.holySpiritBaptismDate || ''} onChange={e => onChange('holySpiritBaptismDate', e.target.value)} />
               </div>
           </div>
       </section>
@@ -590,6 +606,42 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   // LISTA DE MINISTÉRIOS DISPONÍVEIS
   const [availableMinistries, setAvailableMinistries] = useState<string[]>(DEFAULT_MINISTRIES);
   
+  // ESTADO PARA MEMBRO COMUM (VISUALIZAÇÃO ÚNICA)
+  const isMemberView = userRole === 'member';
+  const [myProfile, setMyProfile] = useState<Member | null>(null);
+
+  useEffect(() => {
+      if (isMemberView && currentUserEmail && members.length > 0) {
+          const found = members.find(m => m.email?.toLowerCase() === currentUserEmail.toLowerCase());
+          if (found) setMyProfile(found);
+      }
+  }, [members, isMemberView, currentUserEmail]);
+
+  const handleSaveMyProfile = async () => {
+      if (!myProfile || !myProfile.id) return;
+      try {
+          if (isConfigured) {
+               // SEGURANÇA: Envia apenas os campos permitidos para membro comum (LGPD)
+               // Isso evita que, mesmo manipulando o DOM para habilitar inputs, outros dados sejam salvos
+               const payload = {
+                   id: myProfile.id,
+                   lgpdConsent: myProfile.lgpdConsent,
+                   lgpdConsentDate: myProfile.lgpdConsentDate,
+                   // Mantém os dados essenciais para não quebrar integridade se o RLS exigir, 
+                   // mas idealmente o RLS no banco deve bloquear update em outros campos para role 'authenticated'
+               };
+               
+               const { error } = await supabase.from('members').update(payload).eq('id', myProfile.id);
+               if (error) throw error;
+               alert("Confirmação registrada com sucesso!");
+          } else {
+              alert("Modo Demo: Confirmação registrada!");
+          }
+      } catch (e: any) {
+          alert("Erro: " + e.message);
+      }
+  }
+
   // Atualiza a lista de congregações, cargos e ministérios baseado nos membros existentes E tabela de Locations/Ministries
   useEffect(() => {
     const loadLists = async () => {
@@ -644,6 +696,65 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const [selectedMemberForCert, setSelectedMemberForCert] = useState<Member | null>(null);
   const [certType, setCertType] = useState('Batismo nas Águas');
   const [certDesc, setCertDesc] = useState('Declaramos que o membro acima está em plena comunhão com esta igreja.');
+
+  // SE FOR MEMBRO COMUM, RENDERIZA APENAS O PRÓPRIO PERFIL
+  if (isMemberView) {
+      if (!myProfile) {
+          return (
+              <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+                  <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-full mb-4">
+                      <AlertCircle className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Cadastro Não Vinculado</h2>
+                  <p className="text-slate-600 dark:text-slate-400 max-w-md">
+                      Não encontramos um membro vinculado ao email <strong>{currentUserEmail}</strong>. 
+                      Por favor, entre em contato com a secretaria da igreja para atualizar seu cadastro.
+                  </p>
+              </div>
+          );
+      }
+
+      return (
+          <div className="max-w-4xl mx-auto pb-20">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                      <div>
+                          <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                              <User className="w-5 h-5 text-blue-600" /> Meu Cadastro
+                          </h2>
+                          <p className="text-xs text-slate-500 mt-1">Visualize seus dados e confirme os termos de uso.</p>
+                      </div>
+                      {/* Botão de Salvar só aparece se o termo LGPD foi marcado e ainda não salvo no banco (ou para reforçar) */}
+                      <button 
+                        onClick={handleSaveMyProfile}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+                      >
+                          <CheckCircle className="w-4 h-4" /> Salvar Confirmação
+                      </button>
+                  </div>
+                  
+                  <div className="p-6 lg:p-8">
+                    <MemberFormContent 
+                        data={myProfile} 
+                        onChange={(field, value) => setMyProfile(prev => prev ? ({ ...prev, [field]: value }) : null)}
+                        isAdmin={false}
+                        readOnly={true}
+                        availableCongregations={congregations}
+                        onAddCongregation={() => {}}
+                        onRemoveCongregation={() => {}}
+                        availableRoles={availableRoles}
+                        onAddRole={() => {}}
+                        onRemoveRole={() => {}}
+                        availableMinistries={availableMinistries}
+                        onAddMinistry={() => {}}
+                        onRemoveMinistry={() => {}}
+                        currentUserEmail={currentUserEmail}
+                    />
+                  </div>
+              </div>
+          </div>
+      );
+  }
 
   const filteredMembers = members.filter(member => 
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
