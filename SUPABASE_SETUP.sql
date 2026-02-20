@@ -166,13 +166,64 @@ ALTER TABLE church_settings ENABLE ROW LEVEL SECURITY;
 -- TABLE: MEMBERS
 DROP POLICY IF EXISTS "Leitura Membros" ON members;
 DROP POLICY IF EXISTS "Escrita Membros" ON members;
+DROP POLICY IF EXISTS "Admin Update Membros" ON members;
+DROP POLICY IF EXISTS "Self Update Membros" ON members;
 
+-- Leitura: Todos autenticados podem ler (necessário para listar membros, mas frontend filtra)
+-- Idealmente, membros comuns só deveriam ler o próprio perfil, mas para recursos sociais (aniversariantes, etc) deixamos aberto leitura.
 CREATE POLICY "Leitura Membros" ON members FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Escrita Membros" ON members FOR ALL TO authenticated USING (
-    (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria') 
-    OR 
-    (email = auth.jwt() ->> 'email')
+
+-- Escrita (INSERT/DELETE): Apenas Admins
+CREATE POLICY "Admin Insert Delete Membros" ON members FOR INSERT TO authenticated WITH CHECK (
+    auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria'
 );
+
+CREATE POLICY "Admin Delete Membros" ON members FOR DELETE TO authenticated USING (
+    auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria'
+);
+
+-- Atualização (UPDATE): Admins (Tudo) OU Próprio Usuário (Restrito via Trigger abaixo)
+CREATE POLICY "Admin Update Membros" ON members FOR UPDATE TO authenticated USING (
+    auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria'
+);
+
+CREATE POLICY "Self Update Membros" ON members FOR UPDATE TO authenticated USING (
+    email = auth.jwt() ->> 'email'
+);
+
+
+-- 5. TRIGGERS DE SEGURANÇA (NOVO)
+-- Impede que um usuário comum altere seu próprio cargo (role) ou status para virar admin
+CREATE OR REPLACE FUNCTION check_member_update_permissions()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Se o usuário NÃO for admin (verificado pelo email no JWT)
+    IF NOT (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria') THEN
+        -- Não pode alterar o ROLE
+        IF NEW.role IS DISTINCT FROM OLD.role THEN
+            RAISE EXCEPTION 'Apenas administradores podem alterar cargos.';
+        END IF;
+        -- Não pode alterar o STATUS
+        IF NEW.status IS DISTINCT FROM OLD.status THEN
+            RAISE EXCEPTION 'Apenas administradores podem alterar o status.';
+        END IF;
+         -- Não pode alterar a CONGREGAÇÃO (evitar bagunça)
+        IF NEW.congregation IS DISTINCT FROM OLD.congregation THEN
+            RAISE EXCEPTION 'Apenas administradores podem alterar a congregação.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Remove trigger anterior se existir para recriar
+DROP TRIGGER IF EXISTS on_member_update_check ON members;
+
+CREATE TRIGGER on_member_update_check
+BEFORE UPDATE ON members
+FOR EACH ROW
+EXECUTE FUNCTION check_member_update_permissions();
+
 
 -- TABLE: MEMBER_NOTES (Apenas Admins podem ver e criar notas)
 DROP POLICY IF EXISTS "Admin Notes" ON member_notes;

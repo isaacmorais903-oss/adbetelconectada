@@ -191,6 +191,11 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
+  // Identifica o usuário atual na lista de membros para exibir o nome correto
+  const currentUserMember = members.find(m => m.email?.toLowerCase() === session?.user?.email?.toLowerCase());
+  const currentUserName = currentUserMember?.name || session?.user?.email?.split('@')[0] || (userRole === 'admin' ? 'Administrador' : 'Visitante');
+  const currentUserEmail = session?.user?.email || '';
+
   const renderView = () => {
     // Só bloqueia a tela se for o CARREGAMENTO INICIAL (sem membros carregados).
     if (isLoadingData && members.length === 0 && inventory.length === 0) {
@@ -255,6 +260,7 @@ const App: React.FC = () => {
       <Sidebar 
         currentView={currentView} onChangeView={setCurrentView} userRole={userRole} onToggleRole={toggleRole}
         isDarkMode={theme === 'dark'} onToggleTheme={toggleTheme} privacyMode={privacyMode} onTogglePrivacy={togglePrivacy}
+        userName={currentUserName} userEmail={currentUserEmail}
       />
 
       <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0 relative">
@@ -266,7 +272,7 @@ const App: React.FC = () => {
                     <span className="font-bold text-lg">{userRole === 'admin' ? 'AD' : 'MB'}</span>
                  </div>
                  <div className="overflow-hidden">
-                    <h1 className="font-bold text-lg leading-tight truncate max-w-[150px]">{session?.user?.email?.split('@')[0] || (userRole === 'admin' ? 'Admin' : 'Membro')}</h1>
+                    <h1 className="font-bold text-lg leading-tight truncate max-w-[150px]">{currentUserName}</h1>
                     <p className="text-xs text-slate-300">{userRole === 'admin' ? 'Painel Administrativo' : 'Área do Membro'}</p>
                  </div>
               </div>
@@ -306,7 +312,7 @@ const App: React.FC = () => {
              <div className="relative"><Bell className="w-6 h-6 text-slate-400" /><span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span></div>
              <div className="flex items-center gap-3 pl-5 border-l border-slate-100 dark:border-slate-700">
                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 max-w-[150px] truncate">{session?.user?.email || (userRole === 'admin' ? 'Administrador' : 'Membro')}</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 max-w-[150px] truncate">{currentUserName}</p>
                   <p className="text-xs text-slate-400">{userRole === 'admin' ? 'Gestão Total' : 'Acesso Limitado'}</p>
                </div>
                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${userRole === 'admin' ? 'bg-blue-600' : 'bg-emerald-600'}`}>

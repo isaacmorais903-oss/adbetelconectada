@@ -14,9 +14,22 @@ interface SidebarProps {
   onToggleTheme?: () => void;
   privacyMode?: boolean;
   onTogglePrivacy?: () => void;
+  userName?: string;
+  userEmail?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onToggleRole, isDarkMode, onToggleTheme, privacyMode, onTogglePrivacy }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+    currentView, 
+    onChangeView, 
+    userRole, 
+    onToggleRole, 
+    isDarkMode, 
+    onToggleTheme, 
+    privacyMode, 
+    onTogglePrivacy,
+    userName,
+    userEmail
+}) => {
   const [imgError, setImgError] = useState(false);
   const [socialLinks, setSocialLinks] = useState({ instagram: '', facebook: '', youtube: '' });
   
@@ -188,8 +201,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, use
                 </div>
             </div>
             <div className="overflow-hidden">
-                <p className="text-sm font-bold text-white truncate">{userRole === 'admin' ? 'Pr. Jeziel' : 'Carlos Silva'}</p>
-                <p className="text-xs text-slate-500 truncate">{userRole === 'admin' ? 'Gestão Total' : 'Membro Ativo'}</p>
+                <p className="text-sm font-bold text-white truncate" title={userName || userEmail}>
+                    {userName || (userRole === 'admin' ? 'Administrador' : 'Usuário')}
+                </p>
+                <p className="text-xs text-slate-500 truncate" title={userEmail}>
+                    {userEmail || (userRole === 'admin' ? 'Gestão Total' : 'Membro Ativo')}
+                </p>
             </div>
         </div>
 
