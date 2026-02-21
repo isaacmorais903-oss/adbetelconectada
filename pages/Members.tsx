@@ -136,20 +136,23 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
 
           // Tenta salvar na tabela 'locations' para persistir mesmo sem membros vinculados
           if (isConfigured) {
-              await supabase.from('locations').insert({
+              const { error } = await supabase.from('locations').insert({
                   name: finalName,
                   type: 'Congregação',
                   address: 'Endereço Pendente', 
                   city: 'Cidade Pendente'
               });
+              if (error) throw error;
           }
 
           onAddCongregation(finalName);
           onChange('congregation', finalName);
           setNewCongregationName('');
           setIsAddingCongregation(false);
-      } catch (error) {
+      } catch (error: any) {
           console.error("Erro ao salvar congregação:", error);
+          alert("Atenção: Não foi possível salvar a congregação no banco de dados. Ela ficará disponível apenas nesta sessão. Erro: " + error.message);
+          
           const formattedNum = (Math.floor(Math.random() * 900) + 100).toString(); // Fallback ID
           const finalName = `${formattedNum} - ${newCongregationName.trim()}`;
           onAddCongregation(finalName);
@@ -179,7 +182,8 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               
               if(isConfigured) {
                   // Salva na tabela ministries para persistir
-                  await supabase.from('ministries').insert({ name: finalMinistry });
+                  const { error } = await supabase.from('ministries').insert({ name: finalMinistry });
+                  if (error) throw error;
               }
               
               onAddMinistry(finalMinistry);
@@ -661,10 +665,12 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
         if (isConfigured) {
             try {
                 // 2. Carrega congregações da tabela de Locais
-                const { data: locData } = await supabase.from('locations').select('name');
+                // Busca tanto pelo tipo explícito quanto pelo padrão de nome para compatibilidade
+                const { data: locData } = await supabase.from('locations').select('name, type');
                 if (locData) {
                     locData.forEach((loc: any) => {
-                        if (loc.name && /\d{3}\s-\s/.test(loc.name)) {
+                        // Aceita se for do tipo Congregação OU se o nome seguir o padrão "000 - Nome"
+                        if (loc.name && (loc.type === 'Congregação' || /\d{3}\s-\s/.test(loc.name))) {
                              uniqueCongregations.add(loc.name);
                         }
                     });

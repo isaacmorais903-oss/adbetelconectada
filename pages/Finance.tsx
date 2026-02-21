@@ -148,13 +148,32 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
   };
 
   const handleDelete = async (id: string) => {
-      if(!confirm("Tem certeza que deseja excluir este lançamento?")) return;
+      // Solicita PIN de segurança
+      const pin = prompt("SEGURANÇA: Digite o PIN financeiro para confirmar a exclusão:");
+      if (!pin) return;
+
       try {
           if(isConfigured) {
+              // Verifica o PIN no banco
+              const { data: settings } = await supabase.from('church_settings').select('financial_pin').single();
+              const validPin = settings?.financial_pin || '0000'; // Fallback se não configurado
+              
+              if (pin !== validPin) {
+                  alert("PIN incorreto! Ação cancelada.");
+                  return;
+              }
+
               const { error } = await supabase.from('transactions').delete().eq('id', id);
               if(error) throw error;
+          } else {
+              // Modo Demo: Aceita qualquer PIN ou '0000'
+              if (pin !== '0000') {
+                   alert("Modo Demo: Use o PIN '0000'");
+                   return;
+              }
           }
           setTransactions(transactions.filter(t => t.id !== id));
+          alert("Lançamento excluído com sucesso.");
       } catch (error: any) {
           alert("Erro ao excluir: " + error.message);
       }
@@ -526,7 +545,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                 filteredTransactions.map((t) => (
                     <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        {new Date(t.date).toLocaleDateString('pt-BR')}
+                        {t.date ? t.date.split('-').reverse().join('/') : '-'}
                     </td>
                     <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
