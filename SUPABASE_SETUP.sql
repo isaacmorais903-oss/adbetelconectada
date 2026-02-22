@@ -330,6 +330,4 @@ ALTER TABLE pastoral_care ENABLE ROW LEVEL SECURITY;
 -- Política de Segurança Extrema: Apenas Admins (Pastores) podem ver ou tocar nesta tabela.
 -- NENHUM membro comum tem acesso, nem leitura.
 DROP POLICY IF EXISTS "Admin Pastoral" ON pastoral_care;
-CREATE POLICY "Admin Pastoral" ON pastoral_care FOR ALL TO authenticated USING (
-    auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria'
-);
+CREATE POLICY "Admin Pastoral" ON pastoral_care FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
