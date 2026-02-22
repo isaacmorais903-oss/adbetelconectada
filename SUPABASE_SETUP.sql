@@ -229,7 +229,41 @@ FOR EACH ROW
 EXECUTE FUNCTION check_member_update_permissions();
 
 
--- TABLE: MEMBER_NOTES (Apenas Admins podem ver e criar notas)
+-- 6. VIEW PÚBLICA E SEGURANÇA DE DADOS (NOVO - BLINDAGEM)
+
+-- Cria uma "View" (Tabela Virtual) que mostra APENAS dados seguros.
+-- Usamos SECURITY DEFINER para que esta view tenha permissão de ler a tabela members
+-- mesmo que o usuário comum não tenha permissão direta de leitura na tabela members.
+CREATE OR REPLACE VIEW members_public_view WITH (security_invoker = false) AS
+SELECT 
+    id, 
+    name, 
+    role, 
+    status, 
+    "photoUrl", 
+    congregation, 
+    ministry, 
+    "joinedAt",
+    email -- Necessário para identificar o usuário, mas não expõe dados sensíveis como CPF/Endereço
+FROM members
+WHERE status != 'Inativo'; -- Opcional: não listar inativos publicamente
+
+-- Concede permissão de leitura na view para usuários autenticados
+GRANT SELECT ON members_public_view TO authenticated;
+
+-- REFAZ A POLÍTICA DE LEITURA DA TABELA MEMBERS (Agora Restritiva)
+DROP POLICY IF EXISTS "Leitura Membros" ON members;
+
+-- Nova Política: 
+-- 1. Admins veem tudo.
+-- 2. O próprio usuário vê seu registro completo (para editar perfil).
+-- 3. NINGUÉM MAIS vê dados diretos da tabela members (devem usar a view acima).
+CREATE POLICY "Leitura Membros Restrita" ON members FOR SELECT TO authenticated USING (
+    (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria') 
+    OR 
+    (email = auth.jwt() ->> 'email')
+);
+
 DROP POLICY IF EXISTS "Admin Notes" ON member_notes;
 CREATE POLICY "Admin Notes" ON member_notes FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
 

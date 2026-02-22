@@ -85,9 +85,30 @@ const App: React.FC = () => {
 
     setIsLoadingData(true);
     try {
-        // Carrega Membros
-        const { data: membersData } = await supabase.from('members').select('*').order('name');
-        if (membersData) setMembers(membersData);
+        // Carrega Membros (Lógica de Segurança)
+        let membersQuery;
+        
+        // Se for admin, carrega tudo da tabela original
+        if (userRole === 'admin') {
+            membersQuery = supabase.from('members').select('*').order('name');
+        } else {
+            // Se for membro comum, carrega da VIEW PÚBLICA (sem dados sensíveis)
+            // Mas também precisa carregar o PRÓPRIO perfil completo da tabela original
+            // Como o App.tsx carrega uma lista única, vamos carregar a view pública para a lista geral.
+            // O componente Members.tsx fará um fetch adicional para "Meus Dados" se necessário.
+            membersQuery = supabase.from('members_public_view').select('*').order('name');
+        }
+
+        const { data: membersData, error: membersError } = await membersQuery;
+        
+        // Fallback: Se a view não existir (ainda não rodou script), tenta tabela normal (o RLS vai bloquear se já rodou)
+        if (membersError && userRole !== 'admin') {
+             console.warn("View pública não encontrada, tentando tabela direta (pode retornar vazio se RLS ativo):", membersError);
+             const { data: fallbackData } = await supabase.from('members').select('*').order('name');
+             if (fallbackData) setMembers(fallbackData);
+        } else if (membersData) {
+             setMembers(membersData as Member[]);
+        }
 
         // Carrega Financeiro (Se for admin ou se precisarmos exibir algo específico)
         // Nota: RLS no banco já protege, mas evitamos requisição desnecessária

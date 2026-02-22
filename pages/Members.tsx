@@ -615,9 +615,25 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
   const [myProfile, setMyProfile] = useState<Member | null>(null);
 
   useEffect(() => {
-      if (isMemberView && currentUserEmail && members.length > 0) {
+      if (isMemberView && currentUserEmail) {
+          // Tenta encontrar na lista (que pode estar incompleta se vier da View Pública)
           const found = members.find(m => m.email?.toLowerCase() === currentUserEmail.toLowerCase());
-          if (found) setMyProfile(found);
+          
+          if (found) {
+              // Se encontrou, verifica se tem dados sensíveis (ex: CPF). Se não tiver, busca do banco.
+              if (!found.cpf && isConfigured) {
+                  supabase.from('members')
+                      .select('*')
+                      .eq('email', currentUserEmail)
+                      .single()
+                      .then(({ data }) => {
+                          if (data) setMyProfile(data);
+                          else setMyProfile(found); // Fallback
+                      });
+              } else {
+                  setMyProfile(found);
+              }
+          }
       }
   }, [members, isMemberView, currentUserEmail]);
 
