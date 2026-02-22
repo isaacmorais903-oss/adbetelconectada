@@ -169,13 +169,16 @@ ALTER TABLE church_settings ENABLE ROW LEVEL SECURITY;
 
 -- TABLE: MEMBERS
 DROP POLICY IF EXISTS "Leitura Membros" ON members;
+DROP POLICY IF EXISTS "Leitura Membros Restrita" ON members; -- Adicionado para garantir limpeza
 DROP POLICY IF EXISTS "Escrita Membros" ON members;
+DROP POLICY IF EXISTS "Admin Insert Delete Membros" ON members;
+DROP POLICY IF EXISTS "Admin Delete Membros" ON members;
 DROP POLICY IF EXISTS "Admin Update Membros" ON members;
 DROP POLICY IF EXISTS "Self Update Membros" ON members;
 
 -- Leitura: Todos autenticados podem ler (necessário para listar membros, mas frontend filtra)
 -- Idealmente, membros comuns só deveriam ler o próprio perfil, mas para recursos sociais (aniversariantes, etc) deixamos aberto leitura.
-CREATE POLICY "Leitura Membros" ON members FOR SELECT TO authenticated USING (true);
+-- NOTA: Esta política antiga é substituída pela "Leitura Membros Restrita" mais abaixo, mas mantemos o DROP acima por segurança.
 
 -- Escrita (INSERT/DELETE): Apenas Admins
 CREATE POLICY "Admin Insert Delete Membros" ON members FOR INSERT TO authenticated WITH CHECK (
