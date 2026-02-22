@@ -10,6 +10,7 @@ import { Locations } from './pages/Locations';
 import { Prayers } from './pages/Prayers';
 import { Inventory } from './pages/Inventory'; 
 import { Discipleship } from './pages/Discipleship'; // Importa Nova Página
+import { PastoralCare } from './pages/PastoralCare'; // Importa Nova Página
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
 import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X, RefreshCw } from 'lucide-react';
@@ -254,6 +255,10 @@ const App: React.FC = () => {
       // NOVA ROTA
       case 'discipleship':
         return <Discipleship members={members} setMembers={setMembers} currentUserEmail={session?.user?.email} />;
+      
+      // NOVA ROTA PASTORAL
+      case 'pastoral':
+        return <PastoralCare userRole={userRole} currentUserEmail={session?.user?.email} members={members} />;
 
       case 'announcements': return <Announcements />;
       case 'locations': return <Locations />;

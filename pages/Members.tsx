@@ -886,6 +886,13 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
             // SUPABASE SAVE
             const payload = { ...currentMember };
             
+            // PROTEÇÃO: Se for edição, remove campos de LGPD para não sobrescrever o aceite do usuário
+            // com dados antigos que podem estar na tela do admin.
+            if (isEditing) {
+                delete payload.lgpdConsent;
+                delete payload.lgpdConsentDate;
+            }
+            
             // Gerar avatar padrão se não tiver foto
             if (!payload.photoUrl) {
                payload.photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name || '')}&background=random&color=fff&size=128`;

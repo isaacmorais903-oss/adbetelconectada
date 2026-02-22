@@ -311,3 +311,25 @@ DROP POLICY IF EXISTS "Leitura Configs" ON church_settings;
 DROP POLICY IF EXISTS "Escrita Configs" ON church_settings;
 CREATE POLICY "Leitura Configs" ON church_settings FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Escrita Configs" ON church_settings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
+
+-- 7. MÓDULO PASTORAL (NOVO)
+CREATE TABLE IF NOT EXISTS pastoral_care (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+  person_name TEXT NOT NULL,
+  date DATE DEFAULT NOW(),
+  subject TEXT NOT NULL,
+  notes TEXT NOT NULL,
+  status TEXT DEFAULT 'Aberto',
+  is_private BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE pastoral_care ENABLE ROW LEVEL SECURITY;
+
+-- Política de Segurança Extrema: Apenas Admins (Pastores) podem ver ou tocar nesta tabela.
+-- NENHUM membro comum tem acesso, nem leitura.
+DROP POLICY IF EXISTS "Admin Pastoral" ON pastoral_care;
+CREATE POLICY "Admin Pastoral" ON pastoral_care FOR ALL TO authenticated USING (
+    auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria'
+);

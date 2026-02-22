@@ -251,6 +251,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Lançar Oferta</span>
             </button>
 
+            {/* PASTORAL CARE BUTTON */}
+            <button 
+                onClick={() => onChangeView?.('pastoral')}
+                className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+            >
+                <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
+                    <HeartHandshake className="w-6 h-6 text-amber-700 dark:text-amber-400" />
+                </div>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Pastoral</span>
+            </button>
+
             {/* Social Media Config Button */}
             <button 
                 onClick={() => setShowSocialModal(true)}

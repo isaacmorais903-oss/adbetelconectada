@@ -36,8 +36,13 @@ export const Locations: React.FC = () => {
   useEffect(() => {
     if(isConfigured) {
         supabase.from('locations').select('*')
-        .then(({ data }) => {
-            if(data && data.length > 0) setLocations(data);
+        .then(({ data, error }) => {
+            if (error) {
+                console.error("Erro ao carregar locais:", error);
+            } else if (data) {
+                // Se conectou com sucesso, usa os dados do banco (mesmo que vazio, removendo o mock)
+                setLocations(data);
+            }
         });
     }
   }, []);
@@ -94,11 +99,14 @@ export const Locations: React.FC = () => {
                    setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
                } else {
                    // INSERT
-                   delete payload.id; // Garante que não envia ID na criação
-                   const { data, error } = await supabase.from('locations').insert(payload).select();
+                   const insertPayload = { ...payload };
+                   delete insertPayload.id; // Garante que não envia ID na criação
+                   
+                   const { data, error } = await supabase.from('locations').insert(insertPayload).select();
                    if(error) throw error;
                    if(data) setLocations([...locations, data[0] as Location]);
                }
+               alert('Local salvo com sucesso!');
           } else {
                // OFFLINE MODE
                if (isEditing && newLocation.id) {
@@ -107,11 +115,12 @@ export const Locations: React.FC = () => {
                    const loc = { ...payload, id: Math.random().toString() } as Location;
                    setLocations([...locations, loc]);
                }
+               alert('Local salvo (Modo Offline/Demo)!');
           }
           setShowModal(false);
-      } catch (error) {
+      } catch (error: any) {
           console.error(error);
-          alert('Erro ao salvar local.');
+          alert('Erro ao salvar local: ' + (error.message || error.details || JSON.stringify(error)));
       } finally {
           setIsSaving(false);
       }
