@@ -86,6 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
         { id: 'members', label: 'Membros', icon: Users },
         { id: 'discipleship', label: 'Discipulado', icon: Sprout }, // NOVO ITEM
+        { id: 'pastoral', label: 'Pastoral', icon: HeartHandshake }, // NOVO ITEM
         { id: 'finance', label: 'Tesouraria', icon: DollarSign },
         { id: 'inventory', label: 'Patrimônio', icon: Package }, 
         { id: 'announcements', label: 'Avisos & Eventos', icon: Bell },

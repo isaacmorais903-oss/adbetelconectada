@@ -831,10 +831,31 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     setShowAddModal(true);
   };
 
-  const openEditModal = (member: Member) => {
+  const openEditModal = async (member: Member) => {
     setIsEditing(true);
+    // Define estado inicial com o que temos localmente
     setCurrentMember({ ...member });
     setShowAddModal(true);
+
+    // Busca dados frescos do banco para garantir que temos a versão mais recente (com LGPD, Código, etc)
+    if (isConfigured && member.id) {
+        try {
+            const { data, error } = await supabase
+                .from('members')
+                .select('*')
+                .eq('id', member.id)
+                .single();
+            
+            if (data && !error) {
+                console.log("Dados atualizados carregados:", data);
+                setCurrentMember(data);
+                // Atualiza também na lista de fundo para evitar inconsistência visual
+                setMembers(prev => prev.map(m => m.id === member.id ? data : m));
+            }
+        } catch (err) {
+            console.error("Erro ao buscar dados atualizados:", err);
+        }
+    }
   };
 
   const openCertModal = (member: Member) => {
