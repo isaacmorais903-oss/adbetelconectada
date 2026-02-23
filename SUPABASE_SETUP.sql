@@ -237,6 +237,7 @@ EXECUTE FUNCTION check_member_update_permissions();
 -- Cria uma "View" (Tabela Virtual) que mostra APENAS dados seguros.
 -- Usamos SECURITY DEFINER para que esta view tenha permissão de ler a tabela members
 -- mesmo que o usuário comum não tenha permissão direta de leitura na tabela members.
+DROP VIEW IF EXISTS members_public_view;
 CREATE OR REPLACE VIEW members_public_view WITH (security_invoker = false) AS
 SELECT 
     id, 
