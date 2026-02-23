@@ -644,23 +644,22 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                // SEGURANÇA: Envia apenas os campos permitidos para membro comum (LGPD)
                // Isso evita que, mesmo manipulando o DOM para habilitar inputs, outros dados sejam salvos
                const payload = {
-                   id: myProfile.id,
                    lgpdConsent: myProfile.lgpdConsent,
                    lgpdConsentDate: myProfile.lgpdConsentDate,
-                   // Mantém os dados essenciais para não quebrar integridade se o RLS exigir, 
-                   // mas idealmente o RLS no banco deve bloquear update em outros campos para role 'authenticated'
                };
                
                const { error } = await supabase.from('members').update(payload).eq('id', myProfile.id);
                if (error) throw error;
                alert("Confirmação registrada com sucesso!");
           } else {
+              // Modo Demo
               alert("Modo Demo: Confirmação registrada!");
           }
       } catch (e: any) {
-          alert("Erro: " + e.message);
+          console.error("Erro ao salvar perfil:", e);
+          alert("Erro ao salvar confirmação: " + e.message);
       }
-  }
+  };
 
   // Atualiza a lista de congregações, cargos e ministérios baseado nos membros existentes E tabela de Locations/Ministries
   useEffect(() => {

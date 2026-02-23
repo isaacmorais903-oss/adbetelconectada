@@ -87,6 +87,19 @@ export interface Transaction {
   memberId?: string;
 }
 
+export interface AccountPayable {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  dueDate: string;
+  paymentDate?: string;
+  status: 'Pendente' | 'Pago' | 'Atrasado';
+  hasInterest: boolean;
+  interestAmount?: number;
+  notes?: string;
+}
+
 export interface Location {
   id: string;
   name: string;

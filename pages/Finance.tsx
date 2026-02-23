@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo, useRef } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
-import { Transaction, UserRole, Member } from '../types';
+import { Transaction, UserRole, Member, AccountPayable } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
 import { generateFinancialReport } from '../services/pdfService';
 import Papa from 'papaparse';
@@ -16,11 +16,124 @@ interface FinanceProps {
 }
 
 export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false, members = [], transactions, setTransactions }) => {
+  const [activeTab, setActiveTab] = useState<'transactions' | 'payables'>('transactions');
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- ACCOUNTS PAYABLE STATE ---
+  const [payables, setPayables] = useState<AccountPayable[]>([]);
+  const [showPayableModal, setShowPayableModal] = useState(false);
+  const [newPayable, setNewPayable] = useState<Partial<AccountPayable>>({
+      description: '',
+      category: 'Contas',
+      amount: 0,
+      dueDate: new Date().toISOString().split('T')[0],
+      status: 'Pendente',
+      hasInterest: false,
+      interestAmount: 0,
+      notes: ''
+  });
+
+  useEffect(() => {
+      if (isConfigured && userRole === 'admin') {
+          supabase.from('accounts_payable').select('*').order('dueDate', { ascending: true })
+              .then(({ data }) => {
+                  if (data) setPayables(data);
+              });
+      }
+  }, [userRole]);
+
+  const handleSavePayable = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSaving(true);
+      try {
+          const payload = { ...newPayable };
+          if (!payload.description || !payload.amount || !payload.dueDate) return;
+
+          if (isConfigured) {
+              if (payload.id) {
+                  const { error } = await supabase.from('accounts_payable').update(payload).eq('id', payload.id);
+                  if (error) throw error;
+                  setPayables(prev => prev.map(p => p.id === payload.id ? { ...p, ...payload } as AccountPayable : p));
+              } else {
+                  const { data, error } = await supabase.from('accounts_payable').insert(payload).select();
+                  if (error) throw error;
+                  if (data) setPayables(prev => [...prev, data[0]]);
+              }
+          } else {
+              // Demo
+              const mock = { ...payload, id: Math.random().toString() } as AccountPayable;
+              if (payload.id) {
+                   setPayables(prev => prev.map(p => p.id === payload.id ? mock : p));
+              } else {
+                   setPayables(prev => [...prev, mock]);
+              }
+          }
+          setShowPayableModal(false);
+          setNewPayable({
+            description: '',
+            category: 'Contas',
+            amount: 0,
+            dueDate: new Date().toISOString().split('T')[0],
+            status: 'Pendente',
+            hasInterest: false,
+            interestAmount: 0,
+            notes: ''
+          });
+      } catch (error: any) {
+          alert('Erro ao salvar conta: ' + error.message);
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
+  const handleDeletePayable = async (id: string) => {
+      if (!confirm('Excluir esta conta a pagar?')) return;
+      if (isConfigured) {
+          await supabase.from('accounts_payable').delete().eq('id', id);
+      }
+      setPayables(prev => prev.filter(p => p.id !== id));
+  };
+
+  const markAsPaid = async (payable: AccountPayable) => {
+      if (!confirm(`Confirmar pagamento de "${payable.description}"?`)) return;
+      const paymentDate = new Date().toISOString().split('T')[0];
+      
+      try {
+        if (isConfigured) {
+            // 1. Atualiza status na tabela de contas
+            await supabase.from('accounts_payable').update({ 
+                status: 'Pago', 
+                paymentDate 
+            }).eq('id', payable.id);
+
+            // 2. Lança automaticamente na tesouraria como saída
+            const transactionPayload = {
+                description: `PGTO: ${payable.description}`,
+                amount: payable.amount + (payable.hasInterest ? (payable.interestAmount || 0) : 0),
+                type: 'expense',
+                category: payable.category,
+                date: paymentDate,
+                paymentMethod: 'Outros'
+            };
+            const { data: txData } = await supabase.from('transactions').insert(transactionPayload).select();
+            
+            // Atualiza estados locais
+            setPayables(prev => prev.map(p => p.id === payable.id ? { ...p, status: 'Pago', paymentDate } : p));
+            if (txData) setTransactions(prev => [txData[0] as Transaction, ...prev]);
+            
+            alert('Conta paga e lançada na tesouraria com sucesso!');
+        } else {
+            alert('Modo Demo: Conta marcada como paga.');
+            setPayables(prev => prev.map(p => p.id === payable.id ? { ...p, status: 'Pago', paymentDate } : p));
+        }
+      } catch (e: any) {
+          alert('Erro ao processar pagamento: ' + e.message);
+      }
+  };
 
   // Estados de Filtro
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -424,160 +537,386 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
             </button>
 
             <button 
-                onClick={() => setShowModal(true)} 
+                onClick={() => activeTab === 'transactions' ? setShowModal(true) : setShowPayableModal(true)} 
                 className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all"
             >
-                <Plus className="w-5 h-5" /> Lançar Novo
+                <Plus className="w-5 h-5" /> {activeTab === 'transactions' ? 'Lançar Novo' : 'Nova Conta'}
             </button>
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatsCard label={`Entradas (${new Date(monthFilter + '-02').toLocaleDateString('pt-BR', { month: 'long' })})`} value={`R$ ${stats.income.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={true} icon={TrendingUp} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" />
-        <StatsCard label={`Saídas (${new Date(monthFilter + '-02').toLocaleDateString('pt-BR', { month: 'long' })})`} value={`R$ ${stats.expense.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={false} icon={TrendingDown} color="text-red-600 bg-red-50 dark:bg-red-900/20" />
-        <StatsCard label="Saldo do Período" value={`R$ ${stats.balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend={stats.balance >= 0 ? "Positivo" : "Atenção"} trendUp={stats.balance >= 0} icon={DollarSign} color="text-blue-600 bg-blue-50 dark:bg-blue-900/20" />
+      {/* TABS DE NAVEGAÇÃO */}
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-6">
+          <button
+              onClick={() => setActiveTab('transactions')}
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === 'transactions' 
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+              }`}
+          >
+              Lançamentos & Fluxo
+          </button>
+          <button
+              onClick={() => setActiveTab('payables')}
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === 'payables' 
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+              }`}
+          >
+              Contas a Pagar
+          </button>
       </div>
 
-      {/* Área de Filtros e Tabela */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        
-        {/* Barra de Ferramentas e Filtros */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 space-y-4">
-            
-            {/* Linha Principal: Busca e Mês */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                    <input 
-                        type="text" 
-                        placeholder="Buscar lançamento..." 
-                        className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                
-                <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-                    <input 
-                        type="month" 
-                        value={monthFilter} 
-                        onChange={e => setMonthFilter(e.target.value)}
-                        className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
-                    />
-                    
-                    <button 
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`md:hidden px-3 py-2 border rounded-lg text-sm flex items-center gap-2 ${showFilters ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-300 text-slate-700'}`}
-                    >
-                        <Filter className="w-4 h-4" /> Filtros
-                    </button>
-
-                    {/* Desktop Filters (Always visible) */}
-                    <div className="hidden md:flex gap-2">
-                        <select 
-                            value={typeFilter} 
-                            onChange={e => setTypeFilter(e.target.value as any)}
-                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
-                        >
-                            <option value="all">Todas Entradas/Saídas</option>
-                            <option value="income">Apenas Entradas</option>
-                            <option value="expense">Apenas Saídas</option>
-                        </select>
-
-                        <select 
-                            value={categoryFilter} 
-                            onChange={e => setCategoryFilter(e.target.value)}
-                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white max-w-[200px]"
-                        >
-                            <option value="Todas">Todas Categorias</option>
-                            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
-                </div>
+      {activeTab === 'transactions' ? (
+        <>
+            {/* Cards de Resumo */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatsCard label={`Entradas (${new Date(monthFilter + '-02').toLocaleDateString('pt-BR', { month: 'long' })})`} value={`R$ ${stats.income.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={true} icon={TrendingUp} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" />
+                <StatsCard label={`Saídas (${new Date(monthFilter + '-02').toLocaleDateString('pt-BR', { month: 'long' })})`} value={`R$ ${stats.expense.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={false} icon={TrendingDown} color="text-red-600 bg-red-50 dark:bg-red-900/20" />
+                <StatsCard label="Saldo do Período" value={`R$ ${stats.balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend={stats.balance >= 0 ? "Positivo" : "Atenção"} trendUp={stats.balance >= 0} icon={DollarSign} color="text-blue-600 bg-blue-50 dark:bg-blue-900/20" />
             </div>
 
-            {/* Mobile Filters (Collapsible) */}
-            {showFilters && (
-                <div className="md:hidden grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2">
-                    <select 
-                        value={typeFilter} 
-                        onChange={e => setTypeFilter(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
-                    >
-                        <option value="all">Tudo</option>
-                        <option value="income">Entradas</option>
-                        <option value="expense">Saídas</option>
-                    </select>
-
-                    <select 
-                        value={categoryFilter} 
-                        onChange={e => setCategoryFilter(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
-                    >
-                        <option value="Todas">Todas Categorias</option>
-                        {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
-            )}
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
-              <tr>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Data</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Descrição</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Categoria</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Forma Pagto.</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Valor</th>
-                {userRole === 'admin' && <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ações</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {filteredTransactions.length === 0 ? (
-                  <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                          Nenhum lançamento encontrado com estes filtros.
-                      </td>
-                  </tr>
-              ) : (
-                filteredTransactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        {t.date ? t.date.split('-').reverse().join('/') : '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                            <div className={`p-1.5 rounded-full ${t.type==='income'?'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600':'bg-red-100 dark:bg-red-900/30 text-red-600'}`}>
-                                {t.type==='income' ? <TrendingUp className="w-3.5 h-3.5"/> : <TrendingDown className="w-3.5 h-3.5"/>}
-                            </div>
-                            <span className="text-slate-900 dark:text-white font-medium">{t.description}</span>
+            {/* Área de Filtros e Tabela */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                
+                {/* Barra de Ferramentas e Filtros */}
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 space-y-4">
+                    
+                    {/* Linha Principal: Busca e Mês */}
+                    <div className="flex flex-col md:flex-row gap-4 justify-between">
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                            <input 
+                                type="text" 
+                                placeholder="Buscar lançamento..." 
+                                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
                         </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
-                        <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs">
-                            {t.category}
-                        </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{t.paymentMethod || '-'}</td>
-                    <td className={`px-6 py-4 font-bold text-right ${t.type==='income'?'text-emerald-600 dark:text-emerald-400':'text-red-600 dark:text-red-400'}`}>
-                        {privacyMode ? '****' : `R$ ${t.amount.toFixed(2)}`}
-                    </td>
-                    {userRole === 'admin' && (
-                        <td className="px-6 py-4 text-right">
-                            <button onClick={() => handleDelete(t.id)} className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20">
-                                <X className="w-4 h-4" />
+                        
+                        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+                            <input 
+                                type="month" 
+                                value={monthFilter} 
+                                onChange={e => setMonthFilter(e.target.value)}
+                                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
+                            />
+                            
+                            <button 
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`md:hidden px-3 py-2 border rounded-lg text-sm flex items-center gap-2 ${showFilters ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-300 text-slate-700'}`}
+                            >
+                                <Filter className="w-4 h-4" /> Filtros
                             </button>
-                        </td>
+
+                            {/* Desktop Filters (Always visible) */}
+                            <div className="hidden md:flex gap-2">
+                                <select 
+                                    value={typeFilter} 
+                                    onChange={e => setTypeFilter(e.target.value as any)}
+                                    className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
+                                >
+                                    <option value="all">Todas Entradas/Saídas</option>
+                                    <option value="income">Apenas Entradas</option>
+                                    <option value="expense">Apenas Saídas</option>
+                                </select>
+
+                                <select 
+                                    value={categoryFilter} 
+                                    onChange={e => setCategoryFilter(e.target.value)}
+                                    className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white max-w-[200px]"
+                                >
+                                    <option value="Todas">Todas Categorias</option>
+                                    {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mobile Filters (Collapsible) */}
+                    {showFilters && (
+                        <div className="md:hidden grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2">
+                            <select 
+                                value={typeFilter} 
+                                onChange={e => setTypeFilter(e.target.value as any)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
+                            >
+                                <option value="all">Tudo</option>
+                                <option value="income">Entradas</option>
+                                <option value="expense">Saídas</option>
+                            </select>
+
+                            <select 
+                                value={categoryFilter} 
+                                onChange={e => setCategoryFilter(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-white"
+                            >
+                                <option value="Todas">Todas Categorias</option>
+                                {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
                     )}
+                </div>
+
+                <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Data</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Descrição</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Categoria</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Forma Pagto.</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Valor</th>
+                        {userRole === 'admin' && <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ações</th>}
                     </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {filteredTransactions.length === 0 ? (
+                        <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                                Nenhum lançamento encontrado com estes filtros.
+                            </td>
+                        </tr>
+                    ) : (
+                        filteredTransactions.map((t) => (
+                            <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {t.date ? t.date.split('-').reverse().join('/') : '-'}
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                    <div className={`p-1.5 rounded-full ${t.type==='income'?'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600':'bg-red-100 dark:bg-red-900/30 text-red-600'}`}>
+                                        {t.type==='income' ? <TrendingUp className="w-3.5 h-3.5"/> : <TrendingDown className="w-3.5 h-3.5"/>}
+                                    </div>
+                                    <span className="text-slate-900 dark:text-white font-medium">{t.description}</span>
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs">
+                                    {t.category}
+                                </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{t.paymentMethod || '-'}</td>
+                            <td className={`px-6 py-4 font-bold text-right ${t.type==='income'?'text-emerald-600 dark:text-emerald-400':'text-red-600 dark:text-red-400'}`}>
+                                {privacyMode ? '****' : `R$ ${t.amount.toFixed(2)}`}
+                            </td>
+                            {userRole === 'admin' && (
+                                <td className="px-6 py-4 text-right">
+                                    <button onClick={() => handleDelete(t.id)} className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </td>
+                            )}
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </>
+      ) : (
+        // --- ABA DE CONTAS A PAGAR ---
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Vencimento</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Descrição</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Categoria</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Valor</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {payables.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                                    Nenhuma conta a pagar cadastrada.
+                                </td>
+                            </tr>
+                        ) : (
+                            payables.map((p) => (
+                                <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                        {p.dueDate.split('-').reverse().join('/')}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                                        {p.description}
+                                        {p.hasInterest && <span className="ml-2 text-xs text-red-500 font-normal">(Juros)</span>}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                        <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs">
+                                            {p.category}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">
+                                        {privacyMode ? '****' : `R$ ${p.amount.toFixed(2)}`}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                            p.status === 'Pago' ? 'bg-emerald-100 text-emerald-700' :
+                                            p.status === 'Atrasado' ? 'bg-red-100 text-red-700' :
+                                            'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                            {p.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        {p.status !== 'Pago' && (
+                                            <button 
+                                                onClick={() => markAsPaid(p)}
+                                                className="text-emerald-600 hover:bg-emerald-50 p-1.5 rounded transition-colors"
+                                                title="Marcar como Pago"
+                                            >
+                                                <CheckCircle className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => {
+                                                setNewPayable(p);
+                                                setShowPayableModal(true);
+                                            }}
+                                            className="text-blue-600 hover:bg-blue-50 p-1.5 rounded transition-colors"
+                                            title="Editar"
+                                        >
+                                            <FileText className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeletePayable(p.id)}
+                                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors"
+                                            title="Excluir"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
+      )}
+
+      {/* MODAL NOVA CONTA A PAGAR */}
+      {showPayableModal && (
+          <div className="fixed inset-0 md:left-72 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-xl font-bold dark:text-white">{newPayable.id ? 'Editar Conta' : 'Nova Conta a Pagar'}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Programe seus pagamentos.</p>
+                    </div>
+                    <button onClick={() => setShowPayableModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
+                </div>
+                
+                <form onSubmit={handleSavePayable} className="overflow-y-auto p-6 space-y-5">
+                    
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Descrição</label>
+                        <input 
+                            type="text" 
+                            required
+                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                            value={newPayable.description} 
+                            onChange={e => setNewPayable({...newPayable, description: e.target.value})} 
+                            placeholder="Ex: Conta de Luz"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor (R$)</label>
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                required
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                value={newPayable.amount} 
+                                onChange={e => setNewPayable({...newPayable, amount: parseFloat(e.target.value)})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Vencimento</label>
+                            <input 
+                                type="date" 
+                                required
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                value={newPayable.dueDate} 
+                                onChange={e => setNewPayable({...newPayable, dueDate: e.target.value})} 
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Categoria</label>
+                        <select 
+                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newPayable.category} 
+                            onChange={e => setNewPayable({...newPayable, category: e.target.value})}
+                        >
+                            <option value="Contas">Contas (Água/Luz/Net)</option>
+                            <option value="Manutenção">Manutenção</option>
+                            <option value="Prebendas">Prebendas</option>
+                            <option value="Material">Material</option>
+                            <option value="Eventos Saída">Eventos</option>
+                            <option value="Outras Saídas">Outros</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input 
+                            type="checkbox" 
+                            id="hasInterest"
+                            checked={newPayable.hasInterest}
+                            onChange={e => setNewPayable({...newPayable, hasInterest: e.target.checked})}
+                            className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="hasInterest" className="text-sm text-slate-700 dark:text-slate-300">Teve Juros/Multa?</label>
+                    </div>
+
+                    {newPayable.hasInterest && (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor dos Juros (R$)</label>
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                value={newPayable.interestAmount} 
+                                onChange={e => setNewPayable({...newPayable, interestAmount: parseFloat(e.target.value)})} 
+                            />
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Observações</label>
+                        <textarea 
+                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                            rows={3}
+                            value={newPayable.notes || ''} 
+                            onChange={e => setNewPayable({...newPayable, notes: e.target.value})} 
+                        />
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700">
+                        <button 
+                            type="submit" 
+                            disabled={isSaving} 
+                            className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none flex justify-center items-center gap-2"
+                        >
+                            {isSaving ? 'Salvando...' : 'Salvar Conta'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+          </div>
+      )}
 
       {/* MODAL NOVO LANÇAMENTO */}
       {showModal && (

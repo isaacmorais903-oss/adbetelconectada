@@ -240,6 +240,7 @@ EXECUTE FUNCTION check_member_update_permissions();
 CREATE OR REPLACE VIEW members_public_view WITH (security_invoker = false) AS
 SELECT 
     id, 
+    code, -- ADICIONADO: Código do membro é público
     name, 
     role, 
     status, 
@@ -247,7 +248,9 @@ SELECT
     congregation, 
     ministry, 
     "joinedAt",
-    email -- Necessário para identificar o usuário, mas não expõe dados sensíveis como CPF/Endereço
+    email, -- Necessário para identificar o usuário
+    "lgpdConsent", -- ADICIONADO: Status do aceite é relevante
+    "lgpdConsentDate" -- ADICIONADO
 FROM members
 WHERE status != 'Inativo'; -- Opcional: não listar inativos publicamente
 
@@ -331,3 +334,23 @@ ALTER TABLE pastoral_care ENABLE ROW LEVEL SECURITY;
 -- NENHUM membro comum tem acesso, nem leitura.
 DROP POLICY IF EXISTS "Admin Pastoral" ON pastoral_care;
 CREATE POLICY "Admin Pastoral" ON pastoral_care FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
+
+-- 8. MÓDULO CONTAS A PAGAR (NOVO)
+CREATE TABLE IF NOT EXISTS accounts_payable (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  amount NUMERIC(10,2) NOT NULL,
+  "dueDate" DATE NOT NULL,
+  "paymentDate" DATE,
+  status TEXT DEFAULT 'Pendente', -- Pendente, Pago, Atrasado
+  "hasInterest" BOOLEAN DEFAULT false,
+  "interestAmount" NUMERIC(10,2) DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE accounts_payable ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin Contas Pagar" ON accounts_payable;
+CREATE POLICY "Admin Contas Pagar" ON accounts_payable FOR ALL TO authenticated USING (auth.jwt() ->> 'email' ~* 'admin|adm|pastor|lider|secretaria|tesouraria');
