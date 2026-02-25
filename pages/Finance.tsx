@@ -26,6 +26,12 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
   // --- ACCOUNTS PAYABLE STATE ---
   const [payables, setPayables] = useState<AccountPayable[]>([]);
   const [showPayableModal, setShowPayableModal] = useState(false);
+  const [payableAmountInputValue, setPayableAmountInputValue] = useState('');
+  const [savedDescriptions, setSavedDescriptions] = useState<string[]>(() => {
+      const saved = localStorage.getItem('saved_payable_descriptions');
+      return saved ? JSON.parse(saved) : [];
+  });
+
   const [newPayable, setNewPayable] = useState<Partial<AccountPayable>>({
       description: '',
       category: 'Contas',
@@ -36,6 +42,27 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       interestAmount: 0,
       notes: ''
   });
+
+  const handlePayableAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const rawValue = e.target.value.replace(/\D/g, ''); 
+      if (!rawValue) { 
+          setPayableAmountInputValue(''); 
+          setNewPayable(prev => ({...prev, amount: 0})); 
+          return; 
+      }
+      const amountNumber = parseFloat(rawValue) / 100;
+      setPayableAmountInputValue(amountNumber.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+      setNewPayable(prev => ({...prev, amount: amountNumber}));
+  };
+
+  const handleSaveDescription = () => {
+      if (newPayable.description && !savedDescriptions.includes(newPayable.description)) {
+          const newSaved = [...savedDescriptions, newPayable.description].sort();
+          setSavedDescriptions(newSaved);
+          localStorage.setItem('saved_payable_descriptions', JSON.stringify(newSaved));
+          alert('Descrição salva com sucesso!');
+      }
+  };
 
   useEffect(() => {
       if (isConfigured && userRole === 'admin') {
@@ -73,6 +100,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
               }
           }
           setShowPayableModal(false);
+          setPayableAmountInputValue('');
           setNewPayable({
             description: '',
             category: 'Contas',
@@ -170,6 +198,28 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
   const [newCategoryName, setNewCategoryName] = useState('');
   const [amountInputValue, setAmountInputValue] = useState('');
 
+  // --- MEMBER SEARCH STATE ---
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  const [showMemberOptions, setShowMemberOptions] = useState(false);
+
+  const filteredMembers = useMemo(() => {
+      if (!memberSearchTerm) return members;
+      return members.filter(m => m.name.toLowerCase().includes(memberSearchTerm.toLowerCase()));
+  }, [members, memberSearchTerm]);
+
+  const handleMemberSelect = (memberId: string) => {
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+          setNewTransaction(prev => ({
+              ...prev, 
+              memberId,
+              description: member ? `Dízimo - ${member.name}` : prev.description
+          }));
+          setMemberSearchTerm(member.name);
+          setShowMemberOptions(false);
+      }
+  };
+
   // Cálculos de Resumo (Baseado no FILTRO DE MÊS SELECIONADO)
   const stats = useMemo(() => {
       const txsInMonth = transactions.filter(t => t.date.startsWith(monthFilter));
@@ -243,6 +293,8 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
         setAmountInputValue('');
         setNewCategoryName('');
         setIsAddingNewCategory(false);
+        setMemberSearchTerm('');
+        setShowMemberOptions(false);
         setNewTransaction({ 
             type: 'income', 
             date: new Date().toISOString().split('T')[0], 
@@ -292,14 +344,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       }
   };
 
-  const handleMemberSelect = (memberId: string) => {
-      const member = members.find(m => m.id === memberId);
-      setNewTransaction(prev => ({
-          ...prev, 
-          memberId,
-          description: member ? `Dízimo - ${member.name}` : prev.description
-      }));
-  };
+
 
   // --- EXPORT FUNCTIONALITY ---
   const handleExportPDF = () => {
@@ -537,7 +582,24 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
             </button>
 
             <button 
-                onClick={() => activeTab === 'transactions' ? setShowModal(true) : setShowPayableModal(true)} 
+                onClick={() => {
+                    if (activeTab === 'transactions') {
+                        setShowModal(true);
+                    } else {
+                        setPayableAmountInputValue('');
+                        setNewPayable({
+                            description: '',
+                            category: 'Contas',
+                            amount: 0,
+                            dueDate: new Date().toISOString().split('T')[0],
+                            status: 'Pendente',
+                            hasInterest: false,
+                            interestAmount: 0,
+                            notes: ''
+                        });
+                        setShowPayableModal(true);
+                    }
+                }} 
                 className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all"
             >
                 <Plus className="w-5 h-5" /> {activeTab === 'transactions' ? 'Lançar Novo' : 'Nova Conta'}
@@ -780,6 +842,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                                         <button 
                                             onClick={() => {
                                                 setNewPayable(p);
+                                                setPayableAmountInputValue(p.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                                                 setShowPayableModal(true);
                                             }}
                                             className="text-blue-600 hover:bg-blue-50 p-1.5 rounded transition-colors"
@@ -820,26 +883,42 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                     
                     <div>
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Descrição</label>
-                        <input 
-                            type="text" 
-                            required
-                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
-                            value={newPayable.description} 
-                            onChange={e => setNewPayable({...newPayable, description: e.target.value})} 
-                            placeholder="Ex: Conta de Luz"
-                        />
+                        <div className="flex gap-2">
+                            <input 
+                                type="text" 
+                                required
+                                list="saved-descriptions"
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                value={newPayable.description} 
+                                onChange={e => setNewPayable({...newPayable, description: e.target.value})} 
+                                placeholder="Ex: Conta de Luz"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleSaveDescription}
+                                className="px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                title="Salvar Descrição"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <datalist id="saved-descriptions">
+                            {savedDescriptions.map((desc, i) => (
+                                <option key={i} value={desc} />
+                            ))}
+                        </datalist>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor (R$)</label>
                             <input 
-                                type="number" 
-                                step="0.01"
+                                type="text" 
                                 required
                                 className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
-                                value={newPayable.amount} 
-                                onChange={e => setNewPayable({...newPayable, amount: parseFloat(e.target.value)})} 
+                                value={payableAmountInputValue} 
+                                onChange={handlePayableAmountChange} 
+                                placeholder="0,00"
                             />
                         </div>
                         <div>
@@ -1032,20 +1111,55 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
 
                     {/* SELEÇÃO DE MEMBRO (Apenas para Dízimos/Ofertas Nominais) */}
                     {((newTransaction.category === 'Dízimos' || newTransaction.category === 'Ofertas Nominais') && !isAddingNewCategory) && (
-                        <div>
+                        <div className="relative">
                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                                 <User className="w-3 h-3" /> Selecionar Membro
                              </label>
-                             <select
+                             
+                             <input
+                                type="text"
                                 className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={newTransaction.memberId || ''}
-                                onChange={e => handleMemberSelect(e.target.value)}
-                             >
-                                 <option value="">Selecione o membro...</option>
-                                 {members.map(m => (
-                                     <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-                                 ))}
-                             </select>
+                                placeholder="Digite o nome do membro..."
+                                value={memberSearchTerm}
+                                onChange={e => {
+                                    setMemberSearchTerm(e.target.value);
+                                    setShowMemberOptions(true);
+                                    if (e.target.value === '') {
+                                        setNewTransaction(prev => ({ ...prev, memberId: '' }));
+                                    }
+                                }}
+                                onFocus={() => setShowMemberOptions(true)}
+                             />
+
+                             {showMemberOptions && (
+                                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {filteredMembers.length > 0 ? (
+                                        filteredMembers.map(m => (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200"
+                                                onClick={() => handleMemberSelect(m.id)}
+                                            >
+                                                {m.name} <span className="text-xs text-slate-400">({m.role})</span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-2 text-sm text-slate-500 dark:text-slate-400">
+                                            Nenhum membro encontrado.
+                                        </div>
+                                    )}
+                                </div>
+                             )}
+                             
+                             {/* Overlay transparente para fechar ao clicar fora */}
+                             {showMemberOptions && (
+                                <div 
+                                    className="fixed inset-0 z-0" 
+                                    onClick={() => setShowMemberOptions(false)} 
+                                    style={{ pointerEvents: 'auto', background: 'transparent' }}
+                                />
+                             )}
                         </div>
                     )}
 

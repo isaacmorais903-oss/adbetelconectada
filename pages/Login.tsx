@@ -108,7 +108,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="hidden md:flex md:w-1/2 bg-blue-900 relative items-center justify-center p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/90 to-slate-900/90 z-10"></div>
             <img 
-                src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80" 
+                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80" 
                 alt="Church Background" 
                 className="absolute inset-0 w-full h-full object-cover"
             />
