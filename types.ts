@@ -85,6 +85,7 @@ export interface Transaction {
   paymentMethod?: 'Pix' | 'Dinheiro' | 'Cartão' | 'Outros'; 
   date: string;
   memberId?: string;
+  ministry?: string;
 }
 
 export interface AccountPayable {

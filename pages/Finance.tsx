@@ -16,12 +16,31 @@ interface FinanceProps {
 }
 
 export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false, members = [], transactions, setTransactions }) => {
-  const [activeTab, setActiveTab] = useState<'transactions' | 'payables'>('transactions');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'payables' | 'ministries'>('transactions');
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- MINISTRIES LIST ---
+  const defaultMinistries = [
+      'Geral / Sede',
+      'Missões',
+      'Ministério Infantil',
+      'Ministério de Louvor',
+      'Ministério de Jovens',
+      'Ministério de Mulheres',
+      'Ministério de Homens',
+      'Mídias e Comunicação',
+      'Ação Social',
+      'EBD / Ensino'
+  ];
+  const [customMinistries, setCustomMinistries] = useState<string[]>([]);
+  const availableMinistries = useMemo(() => {
+      const usedMinistries = transactions.map(t => t.ministry).filter(Boolean) as string[];
+      return Array.from(new Set([...defaultMinistries, ...usedMinistries, ...customMinistries])).sort();
+  }, [transactions, customMinistries]);
 
   // --- ACCOUNTS PAYABLE STATE ---
   const [payables, setPayables] = useState<AccountPayable[]>([]);
@@ -326,7 +345,8 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
             paymentMethod: 'Pix', 
             amount: 0, 
             description: '',
-            memberId: ''
+            memberId: '',
+            ministry: 'Geral / Sede'
         });
     } catch (error: any) {
         console.error(error);
@@ -632,10 +652,10 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       </div>
 
       {/* TABS DE NAVEGAÇÃO */}
-      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-6">
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
           <button
               onClick={() => setActiveTab('transactions')}
-              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === 'transactions' 
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
@@ -645,13 +665,23 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
           </button>
           <button
               onClick={() => setActiveTab('payables')}
-              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === 'payables' 
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
               }`}
           >
               Contas a Pagar
+          </button>
+          <button
+              onClick={() => setActiveTab('ministries')}
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+                  activeTab === 'ministries' 
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+              }`}
+          >
+              Caixa dos Ministérios
           </button>
       </div>
 
@@ -754,6 +784,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                         <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Data</th>
                         <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Descrição</th>
                         <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Categoria</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Ministério</th>
                         <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Forma Pagto.</th>
                         <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Valor</th>
                         {userRole === 'admin' && <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Ações</th>}
@@ -762,7 +793,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                     {filteredTransactions.length === 0 ? (
                         <tr>
-                            <td colSpan={6} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                            <td colSpan={7} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                                 Nenhum lançamento encontrado com estes filtros.
                             </td>
                         </tr>
@@ -784,6 +815,9 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                                 <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs">
                                     {t.category}
                                 </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                {t.ministry || '-'}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{t.paymentMethod || '-'}</td>
                             <td className={`px-6 py-4 font-bold text-right ${t.type==='income'?'text-emerald-600 dark:text-emerald-400':'text-red-600 dark:text-red-400'}`}>
@@ -892,6 +926,65 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                 </table>
             </div>
         </div>
+      )}
+
+      {activeTab === 'ministries' && (
+          <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <StatsCard label="Total Entradas (Ministérios)" value={`R$ ${transactions.filter(t => t.ministry && t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={true} icon={TrendingUp} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" />
+                  <StatsCard label="Total Saídas (Ministérios)" value={`R$ ${transactions.filter(t => t.ministry && t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={false} icon={TrendingDown} color="text-red-600 bg-red-50 dark:bg-red-900/20" />
+                  <StatsCard label="Saldo Total (Ministérios)" value={`R$ ${(transactions.filter(t => t.ministry && t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0) - transactions.filter(t => t.ministry && t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0)).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} trend="" trendUp={true} icon={DollarSign} color="text-blue-600 bg-blue-50 dark:bg-blue-900/20" />
+              </div>
+
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                          <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+                              <tr>
+                                  <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Ministério / Departamento</th>
+                                  <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Entradas</th>
+                                  <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Saídas</th>
+                                  <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Saldo</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                              {availableMinistries.map(ministry => {
+                                  const minTxs = transactions.filter(t => t.ministry === ministry);
+                                  const income = minTxs.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+                                  const expense = minTxs.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+                                  const balance = income - expense;
+
+                                  if (minTxs.length === 0) return null; // Só mostra ministérios com movimentação
+
+                                  return (
+                                      <tr key={ministry} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                                              {ministry}
+                                          </td>
+                                          <td className="px-6 py-4 font-bold text-right text-emerald-600 dark:text-emerald-400">
+                                              {privacyMode ? '****' : `R$ ${income.toFixed(2)}`}
+                                          </td>
+                                          <td className="px-6 py-4 font-bold text-right text-red-600 dark:text-red-400">
+                                              {privacyMode ? '****' : `R$ ${expense.toFixed(2)}`}
+                                          </td>
+                                          <td className={`px-6 py-4 font-bold text-right ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                              {privacyMode ? '****' : `R$ ${balance.toFixed(2)}`}
+                                          </td>
+                                      </tr>
+                                  );
+                              })}
+                              {transactions.filter(t => t.ministry).length === 0 && (
+                                  <tr>
+                                      <td colSpan={4} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                                          Nenhuma movimentação por ministério registrada.
+                                      </td>
+                                  </tr>
+                              )}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
       )}
 
       {/* MODAL NOVA CONTA A PAGAR */}
@@ -1134,6 +1227,20 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                                 ))}
                             </select>
                         )}
+                    </div>
+
+                    {/* MINISTÉRIO / DEPARTAMENTO */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Ministério / Departamento</label>
+                        <select 
+                            className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newTransaction.ministry || 'Geral / Sede'} 
+                            onChange={e => setNewTransaction({...newTransaction, ministry: e.target.value})}
+                        >
+                            {availableMinistries.map(min => (
+                                <option key={min} value={min}>{min}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* SELEÇÃO DE MEMBRO (Apenas para Dízimos/Ofertas Nominais) */}

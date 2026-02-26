@@ -147,6 +147,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='paymentMethod') THEN
         ALTER TABLE transactions ADD COLUMN "paymentMethod" TEXT;
     END IF;
+    -- Transactions: ministry
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='ministry') THEN
+        ALTER TABLE transactions ADD COLUMN ministry TEXT;
+    END IF;
     -- Church Settings: financial_pin
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='church_settings' AND column_name='financial_pin') THEN
         ALTER TABLE church_settings ADD COLUMN "financial_pin" TEXT DEFAULT '0000';
