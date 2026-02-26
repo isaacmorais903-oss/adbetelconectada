@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle, Clock, CheckCircle, Pencil } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
 import { Transaction, UserRole, Member, AccountPayable } from '../types';
 import { supabase, isConfigured } from '../services/supabaseClient';
@@ -252,6 +252,18 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       setNewTransaction(prev => ({...prev, amount: amountNumber}));
   };
 
+  const handleEditTransaction = (t: Transaction) => {
+      setNewTransaction({
+          ...t,
+          memberId: t.memberId || '' 
+      });
+      setAmountInputValue(t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+      if (!availableCategories.includes(t.category)) {
+          setCustomCategories(prev => [...prev, t.category]);
+      }
+      setShowModal(true);
+  };
+
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -265,22 +277,34 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
         const payload = { ...newTransaction, category: finalCategory };
         
         if (isConfigured) {
-            delete payload.id; // Banco gera o ID
             // Limpa memberId se não for categoria de membro
             if (payload.category !== 'Dízimos' && payload.category !== 'Ofertas Nominais') {
                 payload.memberId = null as any;
             }
 
-            const { data, error } = await supabase.from('transactions').insert(payload).select();
-            if (error) throw error;
-            if (data) setTransactions([data[0] as Transaction, ...transactions]);
+            if (payload.id) {
+                 // UPDATE
+                 const { error } = await supabase.from('transactions').update(payload).eq('id', payload.id);
+                 if (error) throw error;
+                 setTransactions(prev => prev.map(item => item.id === payload.id ? { ...item, ...payload } as Transaction : item));
+            } else {
+                 // INSERT
+                 delete payload.id; // Banco gera o ID
+                 const { data, error } = await supabase.from('transactions').insert(payload).select();
+                 if (error) throw error;
+                 if (data) setTransactions([data[0] as Transaction, ...transactions]);
+            }
         } else {
              // LOCAL FALLBACK
-             const tx: Transaction = {
-                ...payload as Transaction,
-                id: Math.random().toString(36).substr(2, 9)
-             };
-             setTransactions([tx, ...transactions]);
+             if (payload.id) {
+                 setTransactions(prev => prev.map(item => item.id === payload.id ? { ...item, ...payload } as Transaction : item));
+             } else {
+                 const tx: Transaction = {
+                    ...payload as Transaction,
+                    id: Math.random().toString(36).substr(2, 9)
+                 };
+                 setTransactions([tx, ...transactions]);
+             }
         }
         
         // Adiciona a nova categoria à lista local para aparecer nos filtros
@@ -766,8 +790,11 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                                 {privacyMode ? '****' : `R$ ${t.amount.toFixed(2)}`}
                             </td>
                             {userRole === 'admin' && (
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDelete(t.id)} className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                    <button onClick={() => handleEditTransaction(t)} className="text-blue-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Editar">
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(t.id)} className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" title="Excluir">
                                         <X className="w-4 h-4" />
                                     </button>
                                 </td>
@@ -1003,7 +1030,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                     <div>
-                        <h3 className="text-xl font-bold dark:text-white">Novo Lançamento</h3>
+                        <h3 className="text-xl font-bold dark:text-white">{newTransaction.id ? 'Editar Lançamento' : 'Novo Lançamento'}</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Registre entradas ou saídas.</p>
                     </div>
                     <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
