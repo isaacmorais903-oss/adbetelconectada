@@ -53,7 +53,10 @@ const App: React.FC = () => {
     });
 
     // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
+      if (event === 'PASSWORD_RECOVERY') {
+          setShowPasswordModal(true);
+      }
       if (session) {
          handleSessionSuccess(session);
       } else {
@@ -357,7 +360,7 @@ const App: React.FC = () => {
            </div>
         )}
 
-        <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
+        <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
           {renderView()}
         </div>
 
