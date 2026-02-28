@@ -499,8 +499,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             </div>
         </div>
 
-        {/* Espaçamento extra no final para mobile (BottomNav) */}
-        <div className="h-16 md:hidden"></div>
     </div>
   );
 };

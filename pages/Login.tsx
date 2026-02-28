@@ -13,13 +13,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const MASTER_CODE = "AD2024"; // <--- CÓDIGO DE SEGURANÇA PARA CRIAR CONTAS ADMIN
 
   const [isRegistering, setIsRegistering] = useState(false); 
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [adminCode, setAdminCode] = useState(''); // Estado para o código de segurança
   const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [imgError, setImgError] = useState(false);
 
   // Verifica se o email digitado é de um administrador
@@ -29,20 +27,20 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    setSuccessMsg('');
 
     const detectedRole = isAdminEmail ? 'admin' : 'member';
+
+    // VERIFICAÇÃO DE SEGURANÇA PARA ADMINS NO CADASTRO
+    if (isRegistering && isAdminEmail && adminCode !== MASTER_CODE) {
+        setErrorMsg(`Para cadastrar um acesso administrativo ("${email}"), é necessário o Código da Igreja.`);
+        setLoading(false);
+        return;
+    }
 
     // 1. MODO DEMONSTRAÇÃO / OFFLINE (Sem Supabase)
     if (!isConfigured) {
         await new Promise(resolve => setTimeout(resolve, 800)); // Fake delay
         
-        if (isForgotPassword) {
-            setSuccessMsg(`(Modo Demo) Link de recuperação enviado para ${email}`);
-            setLoading(false);
-            return;
-        }
-
         if (password === DEMO_PASSWORD) {
             onLogin(detectedRole);
         } else {
@@ -54,22 +52,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     // 2. MODO REAL (Com Supabase)
     try {
-        if (isForgotPassword) {
-            // Tenta recuperar a senha
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin,
-            });
-            if (error) throw error;
-            setSuccessMsg('Link de recuperação enviado! Verifique sua caixa de entrada.');
-            setIsForgotPassword(false);
-        } else if (isRegistering) {
-            // VERIFICAÇÃO DE SEGURANÇA PARA ADMINS NO CADASTRO
-            if (isAdminEmail && adminCode !== MASTER_CODE) {
-                setErrorMsg(`Para cadastrar um acesso administrativo ("${email}"), é necessário o Código da Igreja.`);
-                setLoading(false);
-                return;
-            }
-
+        if (isRegistering) {
             // Tenta Cadastrar
             const { data, error } = await supabase.auth.signUp({
                 email,
@@ -85,7 +68,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             if (data.session) {
                 onLogin(detectedRole);
             } else {
-                setSuccessMsg('Cadastro realizado! Verifique seu e-mail para confirmar a conta.');
+                alert('Cadastro realizado! Se o e-mail não chegar em 1 minuto, peça ao Admin para liberar seu acesso.');
                 setIsRegistering(false); 
             }
 
@@ -108,7 +91,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         } else if (error.message.includes('User already registered')) {
             setErrorMsg("Este e-mail já está cadastrado. Tente fazer login.");
         } else if (error.message.includes('Email not confirmed')) {
-            setErrorMsg("E-mail pendente de confirmação. Verifique sua caixa de entrada.");
+            setErrorMsg("E-mail pendente de confirmação.");
         } else {
             setErrorMsg(error.message || "Erro ao realizar operação");
         }
@@ -172,11 +155,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <div className="text-center md:text-left mb-8">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center justify-center md:justify-start gap-2">
-                    {isForgotPassword ? <Lock className="w-6 h-6 text-blue-600" /> : isRegistering ? <UserPlus className="w-6 h-6 text-blue-600"/> : <LogIn className="w-6 h-6 text-blue-600" />}
-                    {isForgotPassword ? 'Recuperar Senha' : isRegistering ? 'Criar Conta' : 'Acesse sua Conta'}
+                    {isRegistering ? <UserPlus className="w-6 h-6 text-blue-600"/> : <LogIn className="w-6 h-6 text-blue-600" />}
+                    {isRegistering ? 'Criar Conta' : 'Acesse sua Conta'}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
-                    {isForgotPassword ? 'Digite seu e-mail para receber um link de recuperação.' : isRegistering ? 'Preencha os dados para se cadastrar.' : 'Digite seu e-mail e senha para fazer login.'}
+                    {isRegistering ? 'Preencha os dados para se cadastrar.' : 'Digite seu e-mail e senha para fazer login.'}
                 </p>
             </div>
 
@@ -184,13 +167,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 p-3 rounded-lg text-sm flex items-start gap-2 border border-red-100 dark:border-red-900/50">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <span>{errorMsg}</span>
-                </div>
-            )}
-
-            {successMsg && (
-                <div className="mb-6 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 p-3 rounded-lg text-sm flex items-start gap-2 border border-emerald-100 dark:border-emerald-900/50">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <span>{successMsg}</span>
                 </div>
             )}
 
@@ -215,38 +191,21 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     )}
                 </div>
 
-                {!isForgotPassword && (
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Senha</label>
-                            {!isRegistering && (
-                                <button 
-                                    type="button" 
-                                    onClick={() => {
-                                        setIsForgotPassword(true);
-                                        setErrorMsg('');
-                                        setSuccessMsg('');
-                                    }}
-                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                >
-                                    Esqueceu a senha?
-                                </button>
-                            )}
-                        </div>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
-                            <input 
-                                type="password" 
-                                required
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
-                                placeholder="••••••••"
-                                minLength={6}
-                            />
-                        </div>
+                <div className="space-y-1">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Senha</label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+                        <input 
+                            type="password" 
+                            required
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                            placeholder="••••••••"
+                            minLength={6}
+                        />
                     </div>
-                )}
+                </div>
 
                 {/* CAMPO DE SEGURANÇA EXTRA PARA ADMINS */}
                 {isRegistering && isAdminEmail && (
@@ -278,7 +237,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                         <>
-                            {isForgotPassword ? 'Enviar Link de Recuperação' : isRegistering ? 'Cadastrar' : 'Entrar'}
+                            {isRegistering ? 'Cadastrar' : 'Entrar'}
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}
@@ -286,30 +245,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </form>
 
             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
-                {isForgotPassword ? (
-                    <button 
-                        onClick={() => {
-                            setIsForgotPassword(false);
-                            setErrorMsg('');
-                            setSuccessMsg('');
-                        }}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
-                    >
-                        Voltar para o Login
-                    </button>
-                ) : (
-                    <button 
-                        onClick={() => {
-                            setIsRegistering(!isRegistering);
-                            setErrorMsg('');
-                            setSuccessMsg('');
-                            setAdminCode('');
-                        }}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
-                    >
-                        {isRegistering ? 'Já tem uma conta? Fazer Login' : 'Não tem conta? Criar Cadastro'}
-                    </button>
-                )}
+                <button 
+                    onClick={() => {
+                        setIsRegistering(!isRegistering);
+                        setErrorMsg('');
+                        setAdminCode('');
+                    }}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
+                >
+                    {isRegistering ? 'Já tem uma conta? Fazer Login' : 'Não tem conta? Criar Cadastro'}
+                </button>
             </div>
 
             <div className="mt-8 flex justify-center items-center gap-2 text-[10px] text-slate-400 uppercase tracking-widest">
