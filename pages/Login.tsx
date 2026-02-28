@@ -83,9 +83,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             // Se "Confirm Email" estiver DESLIGADO no Supabase, logamos direto.
             if (data.session) {
-                onLogin(detectedRole);
+                // Deslogar imediatamente para forçar aprovação do admin
+                await supabase.auth.signOut();
+                setSuccessMsg('Cadastro realizado! Aguarde a liberação do seu acesso pela secretaria.');
+                setIsRegistering(false);
             } else {
-                setSuccessMsg('Cadastro realizado! Verifique seu e-mail para confirmar a conta.');
+                setSuccessMsg('Cadastro realizado! Verifique seu e-mail para confirmar a conta, ou aguarde a liberação da secretaria.');
                 setIsRegistering(false); 
             }
 
