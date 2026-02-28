@@ -532,28 +532,15 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                       </div>
                       
                       <div className="space-y-4">
-                          <div className="flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
-                              <div className="bg-white p-2 rounded-xl shadow-sm mb-3">
-                                  <img 
-                                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=adbeteltesouraria@gmail.com" 
-                                      alt="QR Code Pix" 
-                                      className="w-32 h-32 object-contain"
-                                  />
-                              </div>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-medium">
-                                  Escaneie o QR Code com o app do seu banco
-                              </p>
-                          </div>
-
                           <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 text-center">
-                              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">Ou copie a Chave Pix (E-mail)</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">Chave Pix (CNPJ/Email/Celular)</p>
                               <p className="text-lg font-mono font-bold text-slate-800 dark:text-white select-all">
-                                  adbeteltesouraria@gmail.com
+                                  pix@adbetel.com.br
                               </p>
                           </div>
                           <button 
                             onClick={() => {
-                                navigator.clipboard.writeText('adbeteltesouraria@gmail.com');
+                                navigator.clipboard.writeText('pix@adbetel.com.br');
                                 alert('Chave Pix copiada!');
                             }}
                             className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-sm"
@@ -575,19 +562,19 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                       <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
                           <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                               <span>Banco:</span>
-                              <span className="font-bold">Mercado Pago</span>
+                              <span className="font-bold">Banco do Brasil (001)</span>
                           </div>
                           <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                               <span>Agência:</span>
-                              <span className="font-bold">0001</span>
+                              <span className="font-bold">1234-5</span>
                           </div>
                           <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                               <span>Conta Corrente:</span>
-                              <span className="font-bold">19693316026</span>
+                              <span className="font-bold">998877-X</span>
                           </div>
                           <div className="flex justify-between pt-1">
                               <span>Favorecido:</span>
-                              <span className="font-bold">Igreja Evangelica Assembleia de Deus Betel</span>
+                              <span className="font-bold">Igreja Evangélica AD Betel</span>
                           </div>
                       </div>
                   </div>
