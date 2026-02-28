@@ -1,5 +1,2 @@
-{
-  "name": "ADBetelConectada",
-  "description": "Uma plataforma moderna para gestão de igrejas, membros e comunicados com inteligência artificial.",
-  "requestFramePermissions": []
-}
+// Arquivo de definições de tipos globais
+// Não é necessário declarar módulos de imagem pois estamos usando caminhos por string.
