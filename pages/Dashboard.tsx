@@ -405,7 +405,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   
   const menuItems = [
     { label: 'Cultos ao Vivo', icon: Youtube, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', action: () => { if(socialLinks.youtube_url) window.open(socialLinks.youtube_url, '_blank'); else alert('Link não configurado pelo administrador.'); } },
-    { label: 'Doações', icon: DollarSign, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', action: () => onChangeView?.('finance') },
+    { label: 'Dízimos e Ofertas', icon: DollarSign, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', action: () => onChangeView?.('finance') },
     { label: 'Pedidos Oração', icon: HeartHandshake, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/20', action: () => onChangeView?.('prayers') },
     { label: 'Agenda', icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', action: () => onChangeView?.('announcements') },
     { label: 'Meus Dados', icon: User, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-900/20', action: () => onChangeView?.('members') },
@@ -499,6 +499,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             </div>
         </div>
 
+        {/* Espaçamento extra no final para mobile (BottomNav) */}
+        <div className="h-16 md:hidden"></div>
     </div>
   );
 };

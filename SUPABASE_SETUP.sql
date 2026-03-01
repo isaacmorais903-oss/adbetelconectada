@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   amount NUMERIC(10,2) NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
   category TEXT,
+  ministry TEXT, -- Nova coluna para a aba Caixa dos Ministérios
   "paymentMethod" TEXT,
   date DATE NOT NULL,
   "memberId" UUID REFERENCES members(id) ON DELETE SET NULL,
