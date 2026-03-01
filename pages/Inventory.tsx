@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Package, Plus, Search, Filter, Trash2, Edit2, Archive, DollarSign, Box } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { StatsCard } from '../components/StatsCard';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 interface InventoryProps {
     initialItems: InventoryItem[];

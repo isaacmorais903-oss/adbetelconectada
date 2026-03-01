@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HeartHandshake, Plus, MessageCircle, Lock, Globe, CheckCircle } from 'lucide-react';
 import { PrayerRequest } from '../types';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 const INITIAL_PRAYERS: PrayerRequest[] = [
   { id: '1', requesterName: 'Maria José', request: 'Pela saúde do meu esposo que fará cirurgia.', date: '2023-10-25', status: 'Em Oração', isPrivate: false },

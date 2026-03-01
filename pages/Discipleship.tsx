@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sprout, Phone, Calendar, User, BookOpen, CheckCircle, ArrowRight, MessageSquare, Clock, X, Send, PlusCircle } from 'lucide-react';
 import { Member, FollowUpStage, MemberNote } from '../types';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 interface DiscipleshipProps {
   members: Member[];

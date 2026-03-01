@@ -14,7 +14,7 @@ import { PastoralCare } from './pages/PastoralCare'; // Importa Nova Página
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
 import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X, RefreshCw } from 'lucide-react';
-import { supabase, isConfigured } from './services/supabaseClient';
+import { supabase, isConfigured } from './services/supabase';
 
 const App: React.FC = () => {
   // Auth State

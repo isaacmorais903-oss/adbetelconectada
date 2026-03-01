@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon, Edit2 } from 'lucide-react';
 import { Location } from '../types';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 // Dados iniciais para fallback offline
 const INITIAL_LOCATIONS: Location[] = [

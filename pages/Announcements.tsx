@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Sparkles, Send, Trash2, AlertTriangle, Calendar } from 'lucide-react';
 import { Announcement, AnnouncementType } from '../types';
-import { generateAnnouncementContent } from '../services/geminiService';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { generateAnnouncementContent } from '../services/gemini';
+import { supabase, isConfigured } from '../services/supabase';
 
 const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   { 

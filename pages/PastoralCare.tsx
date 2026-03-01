@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 import { UserRole, Member } from '../types';
 import { Lock, Search, Plus, Calendar, Save, Trash2, User, FileText, AlertTriangle } from 'lucide-react';
 

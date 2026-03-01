@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Church, Mail, Lock, ArrowRight, Wifi, AlertCircle, UserPlus, LogIn, ShieldAlert } from 'lucide-react';
 import { APP_CONFIG } from '../config';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 interface LoginProps {
   onLogin: (role: 'admin' | 'member') => void;

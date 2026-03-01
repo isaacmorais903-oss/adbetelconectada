@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText, Lock, AlertCircle, Users } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
-import { generateMembershipCard, generateCertificate } from '../services/pdfService';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { generateMembershipCard, generateCertificate } from '../services/pdf';
+import { supabase, isConfigured } from '../services/supabase';
 import { APP_CONFIG } from '../config';
 
 const BRAZIL_STATES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];

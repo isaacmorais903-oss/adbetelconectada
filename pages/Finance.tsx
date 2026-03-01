@@ -3,8 +3,8 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, Filter, Plus, X, Search, Calendar, FileText, User, FileDown, Upload, Download, AlertCircle, Clock, CheckCircle, Pencil } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
 import { Transaction, UserRole, Member, AccountPayable } from '../types';
-import { supabase, isConfigured } from '../services/supabaseClient';
-import { generateFinancialReport } from '../services/pdfService';
+import { supabase, isConfigured } from '../services/supabase';
+import { generateFinancialReport } from '../services/pdf';
 import Papa from 'papaparse';
 
 interface FinanceProps {

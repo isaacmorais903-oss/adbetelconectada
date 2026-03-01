@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight, Save, Upload, FileSpreadsheet, Share2, Facebook, Instagram, ExternalLink, X } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
 import { UserRole, View, ChurchSettings, Member, MemberStatus } from '../types';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 interface DashboardProps {
   userRole: UserRole;

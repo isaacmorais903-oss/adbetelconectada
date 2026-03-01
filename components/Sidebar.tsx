@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X, Sprout } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
-import { supabase, isConfigured } from '../services/supabaseClient';
+import { supabase, isConfigured } from '../services/supabase';
 
 interface SidebarProps {
   currentView: View;
