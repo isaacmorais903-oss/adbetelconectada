@@ -45,27 +45,42 @@ export const generateMembershipCard = async (member: Member) => {
     doc.setTextColor(0, 0, 0);
 
     // 3. DADOS DO MEMBRO (FRENTE)
-    // Ajuste as coordenadas X e Y para alinhar com as caixas brancas do seu design
     
     // NOME
-    doc.setFontSize(10);
-    doc.text(member.name.toUpperCase(), 6, 24); // X: 6mm, Y: 24mm
+    doc.setFontSize(8);
+    doc.text(member.name.toUpperCase(), 5, 24.5); // X: 5mm, Y: 24.5mm (Descido um pouco)
 
     // FUNÇÃO
-    doc.setFontSize(9);
-    doc.text(member.role.toUpperCase(), 6, 35); // X: 6mm, Y: 35mm
+    doc.setFontSize(8);
+    doc.text(member.role.toUpperCase(), 5, 31.5); // X: 5mm, Y: 31.5mm (Subido um pouco)
 
     // REGISTRO
     const code = member.code || member.id.substring(0, 8).toUpperCase();
-    doc.setFontSize(9);
-    doc.text(code, 6, 46); // X: 6mm, Y: 46mm
+    doc.setFontSize(7);
+    doc.text(code, 5, 38.5); // X: 5mm, Y: 38.5mm (Subido consideravelmente)
+
+    // CONGREGAÇÃO (Assumindo que seja a Sede por padrão, ou pode vir do member.location)
+    doc.setFontSize(7);
+    doc.text("SEDE", 35, 38.5); // X: 35mm, Y: 38.5mm
+
+    // DATA VÁLIDA (Exemplo: 1 ano a partir de hoje)
+    const validade = new Date();
+    validade.setFullYear(validade.getFullYear() + 1);
+    const validadeStr = validade.toLocaleDateString('pt-BR');
+    doc.setFontSize(7);
+    doc.text(validadeStr, 5, 45.5); // X: 5mm, Y: 45.5mm
+
+    // DATA DE BATISMO
+    const batismoFrente = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "";
+    doc.setFontSize(7);
+    doc.text(batismoFrente, 35, 45.5); // X: 35mm, Y: 45.5mm
 
     // 4. FOTO DO MEMBRO
-    // Ajuste as coordenadas e tamanho para encaixar no quadrado preto da direita
-    const photoX = 56; // Posição X da foto
-    const photoY = 16; // Posição Y da foto
-    const photoW = 24; // Largura da foto
-    const photoH = 30; // Altura da foto
+    // Ajuste as coordenadas e tamanho para encaixar no quadrado branco da direita
+    const photoX = 66; // Posição X da foto (Movido para a direita)
+    const photoY = 21; // Posição Y da foto (Descido um pouco)
+    const photoW = 16; // Largura da foto (Reduzido)
+    const photoH = 21; // Altura da foto (Reduzido)
 
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
       try {
@@ -97,31 +112,30 @@ export const generateMembershipCard = async (member: Member) => {
     doc.setTextColor(0, 0, 0);
 
     // 3. DADOS DO MEMBRO (VERSO)
-    // Ajuste as coordenadas X e Y para alinhar com as caixas do verso
     
+    // PAI (Linha 1)
+    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), 5, 30.5); // X: 5mm, Y: 30.5mm
+
+    // MÃE (Linha 2)
+    doc.text((member.motherName || "").toUpperCase().substring(0, 40), 5, 37.5); // X: 5mm, Y: 37.5mm
+
     // Coluna 1 (Esquerda)
-    const col1X = 6;
+    const col1X = 5;
     // Coluna 2 (Direita)
     const col2X = 45;
 
-    // Linha 1
-    doc.text((member.motherName || "").toUpperCase().substring(0, 25), col1X, 12);
-    doc.text((member.cpf || ""), col2X, 12);
-
-    // Linha 2
-    doc.text((member.fatherName || "").toUpperCase().substring(0, 25), col1X, 21);
-    doc.text((member.maritalStatus || "").toUpperCase(), col2X, 21);
-
-    // Linha 3
-    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), col1X, 30);
-    const birth = member.birthDate ? new Date(member.birthDate).toLocaleDateString('pt-BR') : "";
-    doc.text(birth, col2X, 30);
-
-    // Linha 4
+    // Linha 3 (Naturalidade e Estado Civil - Assumindo que o segundo "Naturalidade" no seu design seja Estado Civil ou Data Nasc)
+    // No seu print, o verso tem "Naturalidade" duas vezes. Vou assumir que o da direita seja Data de Nascimento ou Estado Civil.
+    // Vou colocar Naturalidade na esquerda e Data de Nascimento na direita para seguir um padrão comum.
     const nat = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "";
-    doc.text(nat.toUpperCase().substring(0, 25), col1X, 39);
-    const batismo = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "";
-    doc.text(batismo, col2X, 39);
+    doc.text(nat.toUpperCase().substring(0, 25), col1X, 44.5); // X: 5mm, Y: 44.5mm
+    
+    const birth = member.birthDate ? new Date(member.birthDate).toLocaleDateString('pt-BR') : "";
+    doc.text(birth, col2X, 44.5); // X: 45mm, Y: 44.5mm (Substituindo o segundo "Naturalidade")
+
+    // Linha 4 (CPF e RG)
+    doc.text((member.cpf || ""), col1X, 51.5); // X: 5mm, Y: 51.5mm
+    doc.text((member.rg || ""), col2X, 51.5); // X: 45mm, Y: 51.5mm (Assumindo que você tenha um campo RG, se não tiver, ficará em branco)
 
     // Salva o PDF
     doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
