@@ -16,71 +16,77 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
 
 export const generateMembershipCard = async (member: Member) => {
   // Tamanho Cartão de Crédito Padrão (85.6mm x 54mm)
+  // Layout Lado a Lado: 171.2mm x 54mm
+  const width = 171.2;
+  const height = 54;
+  
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
-    format: [85.6, 54]
+    format: [width, height]
   });
-
-  const width = 85.6;
-  const height = 54;
 
   try {
     // =====================================================================
-    // PÁGINA 1: FRENTE DA CARTEIRINHA
+    // CARTEIRINHA COMPLETA (FRENTE E VERSO LADO A LADO)
     // =====================================================================
     
-    // 1. CARREGA O MODELO DE FUNDO DA FRENTE
+    // 1. CARREGA O MODELO DE FUNDO
+    // O usuário deve fazer upload da imagem "carteirinha_nova.png" na pasta public
     try {
-      const templateFrente = await loadImage('/carteirinha_frente.png');
-      doc.addImage(templateFrente, 'PNG', 0, 0, width, height);
+      const template = await loadImage('/carteirinha_nova.png');
+      doc.addImage(template, 'PNG', 0, 0, width, height);
     } catch (e) {
-      console.warn("Imagem carteirinha_frente.png não encontrada. Usando fundo branco.");
+      console.warn("Imagem carteirinha_nova.png não encontrada. Usando fundo branco.");
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, width, height, 'F');
+      // Desenha linha divisória se não houver imagem
+      doc.setDrawColor(200, 200, 200);
+      doc.line(85.6, 0, 85.6, height);
     }
 
-    // 2. CONFIGURAÇÕES DE FONTE (FRENTE)
+    // 2. CONFIGURAÇÕES DE FONTE
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
 
-    // 3. DADOS DO MEMBRO (FRENTE)
+    // =====================================================================
+    // LADO ESQUERDO (FRENTE)
+    // =====================================================================
     
     // NOME
-    doc.setFontSize(8);
-    doc.text(member.name.toUpperCase(), 5, 27.5); // X: 5mm, Y: 27.5mm (Ajustado +3mm)
+    doc.setFontSize(9);
+    doc.text(member.name.toUpperCase(), 4, 26); 
 
     // FUNÇÃO
+    doc.setFontSize(9);
+    doc.text(member.role.toUpperCase(), 4, 33); 
+
+    // MINISTÉRIO / DEP. (Esquerda)
     doc.setFontSize(8);
-    doc.text(member.role.toUpperCase(), 5, 34.5); // X: 5mm, Y: 34.5mm (Ajustado +3mm)
+    doc.text((member.ministry || "").toUpperCase(), 4, 40);
 
-    // REGISTRO
+    // CÓDIGO / REGISTRO (Direita)
     const code = member.code || member.id.substring(0, 8).toUpperCase();
-    doc.setFontSize(7);
-    doc.text(code, 5, 41.5); // X: 5mm, Y: 41.5mm (Ajustado +3mm)
+    doc.setFontSize(8);
+    doc.text(code, 35, 40); 
 
-    // CONGREGAÇÃO (Assumindo que seja a Sede por padrão, ou pode vir do member.location)
-    doc.setFontSize(7);
-    doc.text("SEDE", 35, 41.5); // X: 35mm, Y: 41.5mm (Ajustado +3mm)
+    // CONGREGAÇÃO (Esquerda)
+    doc.setFontSize(8);
+    doc.text((member.congregation || "SEDE").toUpperCase(), 4, 47);
 
-    // DATA VÁLIDA (Exemplo: 1 ano a partir de hoje)
+    // DATA DE VALIDADE (Direita)
     const validade = new Date();
     validade.setFullYear(validade.getFullYear() + 1);
     const validadeStr = validade.toLocaleDateString('pt-BR');
-    doc.setFontSize(7);
-    doc.text(validadeStr, 5, 48.5); // X: 5mm, Y: 48.5mm (Ajustado +3mm)
+    doc.setFontSize(8);
+    doc.text(validadeStr, 35, 47);
 
-    // DATA DE BATISMO
-    const batismoFrente = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "";
-    doc.setFontSize(7);
-    doc.text(batismoFrente, 35, 48.5); // X: 35mm, Y: 48.5mm (Ajustado +3mm)
-
-    // 4. FOTO DO MEMBRO
+    // FOTO DO MEMBRO
     // Ajuste as coordenadas e tamanho para encaixar no quadrado branco da direita
-    const photoX = 65; // Posição X da foto (Movido para a esquerda)
-    const photoY = 20; // Posição Y da foto (Subido um pouco para compensar aumento)
-    const photoW = 19; // Largura da foto (Aumentado)
-    const photoH = 25; // Altura da foto (Aumentado)
+    const photoX = 63; 
+    const photoY = 22; 
+    const photoW = 20; 
+    const photoH = 26; 
 
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
       try {
@@ -92,57 +98,40 @@ export const generateMembershipCard = async (member: Member) => {
     }
 
     // =====================================================================
-    // PÁGINA 2: VERSO DA CARTEIRINHA
+    // LADO DIREITO (VERSO) - Offset X = 85.6mm
     // =====================================================================
-    doc.addPage();
+    const offsetX = 85.6;
 
-    // 1. CARREGA O MODELO DE FUNDO DO VERSO
-    try {
-      const templateVerso = await loadImage('/carteirinha_verso.png');
-      doc.addImage(templateVerso, 'PNG', 0, 0, width, height);
-    } catch (e) {
-      console.warn("Imagem carteirinha_verso.png não encontrada. Usando fundo branco.");
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, width, height, 'F');
-    }
+    // PAI
+    doc.setFontSize(8);
+    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), offsetX + 4, 19); 
 
-    // 2. CONFIGURAÇÕES DE FONTE (VERSO)
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(0, 0, 0);
+    // MÃE
+    doc.setFontSize(8);
+    doc.text((member.motherName || "").toUpperCase().substring(0, 40), offsetX + 4, 26); 
 
-    // 3. DADOS DO MEMBRO (VERSO)
-    
-    // PAI (Linha 1)
-    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), 5, 30.5); // X: 5mm, Y: 30.5mm
+    // NACIONALIDADE (Esquerda)
+    doc.setFontSize(8);
+    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), offsetX + 4, 33);
 
-    // MÃE (Linha 2)
-    doc.text((member.motherName || "").toUpperCase().substring(0, 40), 5, 37.5); // X: 5mm, Y: 37.5mm
-
-    // Coluna 1 (Esquerda)
-    const col1X = 5;
-    // Coluna 2 (Direita)
-    const col2X = 45;
-
-    // Linha 3 (Naturalidade e Estado Civil - Assumindo que o segundo "Naturalidade" no seu design seja Estado Civil ou Data Nasc)
-    // No seu print, o verso tem "Naturalidade" duas vezes. Vou assumir que o da direita seja Data de Nascimento ou Estado Civil.
-    // Vou colocar Naturalidade na esquerda e Data de Nascimento na direita para seguir um padrão comum.
+    // NATURALIDADE (Direita)
     const nat = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "";
-    doc.text(nat.toUpperCase().substring(0, 25), col1X, 44.5); // X: 5mm, Y: 44.5mm
-    
-    const birth = member.birthDate ? new Date(member.birthDate).toLocaleDateString('pt-BR') : "";
-    doc.text(birth, col2X, 44.5); // X: 45mm, Y: 44.5mm (Substituindo o segundo "Naturalidade")
+    doc.text(nat.toUpperCase().substring(0, 25), offsetX + 45, 33);
 
-    // Linha 4 (CPF e RG)
-    doc.text((member.cpf || ""), col1X, 51.5); // X: 5mm, Y: 51.5mm
-    doc.text((member.rg || ""), col2X, 51.5); // X: 45mm, Y: 51.5mm (Assumindo que você tenha um campo RG, se não tiver, ficará em branco)
+    // CPF (Esquerda)
+    doc.setFontSize(8);
+    doc.text((member.cpf || ""), offsetX + 4, 40);
+
+    // RG (Direita)
+    doc.setFontSize(8);
+    doc.text((member.rg || ""), offsetX + 45, 40);
 
     // Salva o PDF
     doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
 
   } catch (error) {
     console.error("Erro ao gerar carteirinha:", error);
-    alert("Erro ao gerar carteirinha. Verifique se as imagens estão na pasta public.");
+    alert("Erro ao gerar carteirinha. Verifique se a imagem 'carteirinha_nova.png' está na pasta public.");
   }
 };
 

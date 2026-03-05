@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { Announcement, AnnouncementType } from '../types';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Clock, MapPin, Pencil } from 'lucide-react';
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,7 +14,9 @@ export default function Calendar() {
   // New Event Form State
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventContent, setNewEventContent] = useState('');
+  const [newEventType, setNewEventType] = useState<AnnouncementType>(AnnouncementType.EVENT);
   const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Announcement | null>(null);
 
   useEffect(() => {
     checkUserRole();
@@ -45,7 +47,7 @@ export default function Calendar() {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
-      .eq('type', AnnouncementType.EVENT)
+      .in('type', [AnnouncementType.EVENT, AnnouncementType.CULT, AnnouncementType.LECTURE, AnnouncementType.OTHER])
       .gte('date', startOfMonth.toISOString())
       .lte('date', endOfMonth.toISOString());
 
@@ -78,6 +80,10 @@ export default function Calendar() {
     setSelectedDate(clickedDate);
     setShowModal(true);
     setShowAddEventForm(false); // Reset form when opening modal
+    setEditingEvent(null);
+    setNewEventTitle('');
+    setNewEventContent('');
+    setNewEventType(AnnouncementType.EVENT);
   };
 
   const getEventsForDay = (day: number) => {
@@ -100,32 +106,57 @@ export default function Calendar() {
     });
   };
 
-  const handleAddEvent = async () => {
+  const handleSaveEvent = async () => {
     if (!selectedDate || !newEventTitle || !newEventContent) return;
 
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .insert([
-          {
+      if (editingEvent) {
+        // Update existing event
+        const { error } = await supabase
+          .from('announcements')
+          .update({
             title: newEventTitle,
             content: newEventContent,
-            type: AnnouncementType.EVENT, // Explicitly set as Evento
-            date: selectedDate.toISOString().split('T')[0], // Save as YYYY-MM-DD
-          }
-        ]);
+            type: newEventType,
+          })
+          .eq('id', editingEvent.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Create new event
+        const { error } = await supabase
+          .from('announcements')
+          .insert([
+            {
+              title: newEventTitle,
+              content: newEventContent,
+              type: newEventType,
+              date: selectedDate.toISOString().split('T')[0],
+            }
+          ]);
+
+        if (error) throw error;
+      }
 
       // Refresh events
       fetchEvents();
       setNewEventTitle('');
       setNewEventContent('');
+      setNewEventType(AnnouncementType.EVENT);
+      setEditingEvent(null);
       setShowAddEventForm(false);
     } catch (error) {
-      console.error('Error adding event:', error);
-      alert('Erro ao adicionar evento.');
+      console.error('Error saving event:', error);
+      alert('Erro ao salvar evento.');
     }
+  };
+
+  const handleEditEvent = (event: Announcement) => {
+    setEditingEvent(event);
+    setNewEventTitle(event.title);
+    setNewEventContent(event.content);
+    setNewEventType(event.type);
+    setShowAddEventForm(true);
   };
 
   const handleDeleteEvent = async (id: string) => {
@@ -270,18 +301,32 @@ export default function Calendar() {
                           <p className="text-slate-600 dark:text-slate-300 mt-2 text-sm whitespace-pre-wrap">{event.content}</p>
                         </div>
                         {isAdmin && (
-                          <button 
-                            onClick={() => handleDeleteEvent(event.id)}
-                            className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                            title="Excluir evento"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => handleEditEvent(event)}
+                              className="text-blue-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                              title="Editar evento"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteEvent(event.id)}
+                              className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                              title="Excluir evento"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="mt-3 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
-                          <Clock className="w-3 h-3" /> Evento
+                        <span className={`flex items-center gap-1 px-2 py-1 rounded-full
+                          ${event.type === AnnouncementType.CULT ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 
+                            event.type === AnnouncementType.LECTURE ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
+                            event.type === AnnouncementType.OTHER ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' :
+                            'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}
+                        `}>
+                          <Clock className="w-3 h-3" /> {event.type}
                         </span>
                       </div>
                     </div>
@@ -298,14 +343,22 @@ export default function Calendar() {
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-800">
                   {!showAddEventForm ? (
                     <button 
-                      onClick={() => setShowAddEventForm(true)}
+                      onClick={() => {
+                        setShowAddEventForm(true);
+                        setEditingEvent(null);
+                        setNewEventTitle('');
+                        setNewEventContent('');
+                        setNewEventType(AnnouncementType.EVENT);
+                      }}
                       className="w-full py-2 flex items-center justify-center gap-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
                     >
                       <Plus className="w-4 h-4" /> Adicionar Evento
                     </button>
                   ) : (
                     <div className="space-y-3 animate-in slide-in-from-top-2">
-                      <h4 className="font-medium text-slate-700 dark:text-slate-300">Novo Evento</h4>
+                      <h4 className="font-medium text-slate-700 dark:text-slate-300">
+                        {editingEvent ? 'Editar Evento' : 'Novo Evento'}
+                      </h4>
                       <input
                         type="text"
                         placeholder="Título do Evento (ex: Culto de Santa Ceia)"
@@ -313,6 +366,16 @@ export default function Calendar() {
                         value={newEventTitle}
                         onChange={e => setNewEventTitle(e.target.value.toUpperCase())}
                       />
+                      <select
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={newEventType}
+                        onChange={e => setNewEventType(e.target.value as AnnouncementType)}
+                      >
+                        <option value={AnnouncementType.EVENT}>Evento</option>
+                        <option value={AnnouncementType.CULT}>Culto</option>
+                        <option value={AnnouncementType.LECTURE}>Palestra</option>
+                        <option value={AnnouncementType.OTHER}>Outros</option>
+                      </select>
                       <textarea
                         placeholder="Detalhes (Horário, Preletor, etc)"
                         className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px] uppercase"
@@ -321,16 +384,19 @@ export default function Calendar() {
                       />
                       <div className="flex gap-2 justify-end">
                         <button 
-                          onClick={() => setShowAddEventForm(false)}
+                          onClick={() => {
+                            setShowAddEventForm(false);
+                            setEditingEvent(null);
+                          }}
                           className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700 rounded-lg"
                         >
                           Cancelar
                         </button>
                         <button 
-                          onClick={handleAddEvent}
+                          onClick={handleSaveEvent}
                           className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm"
                         >
-                          Salvar Evento
+                          {editingEvent ? 'Salvar Alterações' : 'Salvar Evento'}
                         </button>
                       </div>
                     </div>

@@ -65,7 +65,10 @@ export interface Member {
 export enum AnnouncementType {
   GENERAL = 'Geral',
   URGENT = 'Urgente',
-  EVENT = 'Evento'
+  EVENT = 'Evento',
+  CULT = 'Culto',
+  LECTURE = 'Palestra',
+  OTHER = 'Outros'
 }
 
 export interface Announcement {

@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS members (
   "baptismDate" DATE,
   "holySpiritBaptismDate" DATE,
   "previousChurch" TEXT,
+  "fatherName" TEXT,
+  "motherName" TEXT,
   "lgpdConsent" BOOLEAN DEFAULT false,
   "lgpdConsentDate" TIMESTAMPTZ,
   "followupStage" TEXT, -- Campo novo para Discipulado
@@ -126,6 +128,51 @@ BEGIN
     -- Members: followupStage
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='followupStage') THEN
         ALTER TABLE members ADD COLUMN "followupStage" TEXT;
+    END IF;
+
+    -- Members: fatherName
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='fatherName') THEN
+        ALTER TABLE members ADD COLUMN "fatherName" TEXT;
+    END IF;
+
+    -- Members: motherName
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='motherName') THEN
+        ALTER TABLE members ADD COLUMN "motherName" TEXT;
+    END IF;
+
+    -- Members: cpf
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='cpf') THEN
+        ALTER TABLE members ADD COLUMN cpf TEXT;
+    END IF;
+
+    -- Members: rg
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='rg') THEN
+        ALTER TABLE members ADD COLUMN rg TEXT;
+    END IF;
+
+    -- Members: naturalness
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='naturalness') THEN
+        ALTER TABLE members ADD COLUMN naturalness TEXT;
+    END IF;
+
+    -- Members: naturalnessState
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='naturalnessState') THEN
+        ALTER TABLE members ADD COLUMN "naturalnessState" TEXT;
+    END IF;
+
+    -- Members: nationality
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='nationality') THEN
+        ALTER TABLE members ADD COLUMN nationality TEXT;
+    END IF;
+
+    -- Members: profession
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='profession') THEN
+        ALTER TABLE members ADD COLUMN profession TEXT;
+    END IF;
+
+    -- Members: maritalStatus
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='maritalStatus') THEN
+        ALTER TABLE members ADD COLUMN "maritalStatus" TEXT;
     END IF;
 
     -- Members: code
