@@ -48,39 +48,39 @@ export const generateMembershipCard = async (member: Member) => {
     
     // NOME
     doc.setFontSize(8);
-    doc.text(member.name.toUpperCase(), 5, 24.5); // X: 5mm, Y: 24.5mm (Descido um pouco)
+    doc.text(member.name.toUpperCase(), 5, 27.5); // X: 5mm, Y: 27.5mm (Ajustado +3mm)
 
     // FUNÇÃO
     doc.setFontSize(8);
-    doc.text(member.role.toUpperCase(), 5, 31.5); // X: 5mm, Y: 31.5mm (Subido um pouco)
+    doc.text(member.role.toUpperCase(), 5, 34.5); // X: 5mm, Y: 34.5mm (Ajustado +3mm)
 
     // REGISTRO
     const code = member.code || member.id.substring(0, 8).toUpperCase();
     doc.setFontSize(7);
-    doc.text(code, 5, 38.5); // X: 5mm, Y: 38.5mm (Subido consideravelmente)
+    doc.text(code, 5, 41.5); // X: 5mm, Y: 41.5mm (Ajustado +3mm)
 
     // CONGREGAÇÃO (Assumindo que seja a Sede por padrão, ou pode vir do member.location)
     doc.setFontSize(7);
-    doc.text("SEDE", 35, 38.5); // X: 35mm, Y: 38.5mm
+    doc.text("SEDE", 35, 41.5); // X: 35mm, Y: 41.5mm (Ajustado +3mm)
 
     // DATA VÁLIDA (Exemplo: 1 ano a partir de hoje)
     const validade = new Date();
     validade.setFullYear(validade.getFullYear() + 1);
     const validadeStr = validade.toLocaleDateString('pt-BR');
     doc.setFontSize(7);
-    doc.text(validadeStr, 5, 45.5); // X: 5mm, Y: 45.5mm
+    doc.text(validadeStr, 5, 48.5); // X: 5mm, Y: 48.5mm (Ajustado +3mm)
 
     // DATA DE BATISMO
     const batismoFrente = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "";
     doc.setFontSize(7);
-    doc.text(batismoFrente, 35, 45.5); // X: 35mm, Y: 45.5mm
+    doc.text(batismoFrente, 35, 48.5); // X: 35mm, Y: 48.5mm (Ajustado +3mm)
 
     // 4. FOTO DO MEMBRO
     // Ajuste as coordenadas e tamanho para encaixar no quadrado branco da direita
-    const photoX = 66; // Posição X da foto (Movido para a direita)
-    const photoY = 21; // Posição Y da foto (Descido um pouco)
-    const photoW = 16; // Largura da foto (Reduzido)
-    const photoH = 21; // Altura da foto (Reduzido)
+    const photoX = 65; // Posição X da foto (Movido para a esquerda)
+    const photoY = 20; // Posição Y da foto (Subido um pouco para compensar aumento)
+    const photoW = 19; // Largura da foto (Aumentado)
+    const photoH = 25; // Altura da foto (Aumentado)
 
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
       try {

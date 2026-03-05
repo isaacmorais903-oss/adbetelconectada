@@ -160,9 +160,9 @@ export const PastoralCare: React.FC<PastoralCareProps> = ({ userRole, currentUse
                 <input 
                     type="text" 
                     placeholder="Buscar por nome ou assunto..." 
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-500 outline-none uppercase"
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value.toUpperCase())}
                 />
             </div>
 
@@ -293,9 +293,9 @@ export const PastoralCare: React.FC<PastoralCareProps> = ({ userRole, currentUse
                                 <input 
                                     type="text" 
                                     placeholder="Ou digite o nome (se não for membro)"
-                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white uppercase"
                                     value={currentRecord.person_name || ''}
-                                    onChange={e => setCurrentRecord({...currentRecord, person_name: e.target.value, member_id: undefined})}
+                                    onChange={e => setCurrentRecord({...currentRecord, person_name: e.target.value.toUpperCase(), member_id: undefined})}
                                     required
                                 />
                             </div>
@@ -305,9 +305,9 @@ export const PastoralCare: React.FC<PastoralCareProps> = ({ userRole, currentUse
                                 <input 
                                     type="text" 
                                     placeholder="Ex: Aconselhamento Conjugal, Disciplina, Visita..."
-                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white uppercase"
                                     value={currentRecord.subject || ''}
-                                    onChange={e => setCurrentRecord({...currentRecord, subject: e.target.value})}
+                                    onChange={e => setCurrentRecord({...currentRecord, subject: e.target.value.toUpperCase()})}
                                     required
                                 />
                             </div>
@@ -317,9 +317,9 @@ export const PastoralCare: React.FC<PastoralCareProps> = ({ userRole, currentUse
                                 <textarea 
                                     rows={8}
                                     placeholder="Descreva os detalhes do atendimento..."
-                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white font-serif leading-relaxed"
+                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white font-serif leading-relaxed uppercase"
                                     value={currentRecord.notes || ''}
-                                    onChange={e => setCurrentRecord({...currentRecord, notes: e.target.value})}
+                                    onChange={e => setCurrentRecord({...currentRecord, notes: e.target.value.toUpperCase()})}
                                     required
                                 />
                             </div>

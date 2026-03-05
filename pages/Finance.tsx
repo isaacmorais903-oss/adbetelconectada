@@ -720,9 +720,9 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                             <input 
                                 type="text" 
                                 placeholder="Buscar lançamento..." 
-                                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white uppercase"
                                 value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
+                                onChange={e => setSearchTerm(e.target.value.toUpperCase())}
                             />
                         </div>
                         
@@ -1021,9 +1021,9 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                                 type="text" 
                                 required
                                 list="saved-descriptions"
-                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase" 
                                 value={newPayable.description} 
-                                onChange={e => setNewPayable({...newPayable, description: e.target.value})} 
+                                onChange={e => setNewPayable({...newPayable, description: e.target.value.toUpperCase()})} 
                                 placeholder="Ex: Conta de Luz"
                             />
                             <button
@@ -1109,10 +1109,10 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                     <div>
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Observações</label>
                         <textarea 
-                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase" 
                             rows={3}
                             value={newPayable.notes || ''} 
-                            onChange={e => setNewPayable({...newPayable, notes: e.target.value})} 
+                            onChange={e => setNewPayable({...newPayable, notes: e.target.value.toUpperCase()})} 
                         />
                     </div>
 
@@ -1218,10 +1218,10 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                             <input 
                                 type="text"
                                 autoFocus
-                                className="w-full px-3 py-2.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-blue-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-3 py-2.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-blue-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase"
                                 placeholder="Digite o nome da nova categoria"
                                 value={newCategoryName}
-                                onChange={e => setNewCategoryName(e.target.value)}
+                                onChange={e => setNewCategoryName(e.target.value.toUpperCase())}
                             />
                         ) : (
                             <select 
@@ -1265,11 +1265,11 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                              
                              <input
                                 type="text"
-                                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase"
                                 placeholder="Digite o nome do membro..."
                                 value={memberSearchTerm}
                                 onChange={e => {
-                                    setMemberSearchTerm(e.target.value);
+                                    setMemberSearchTerm(e.target.value.toUpperCase());
                                     setShowMemberOptions(true);
                                     if (e.target.value === '') {
                                         setNewTransaction(prev => ({ ...prev, memberId: '' }));
@@ -1317,9 +1317,9 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
                             <FileText className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
                             <input 
                                 type="text" 
-                                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase" 
                                 value={newTransaction.description || ''} 
-                                onChange={e => setNewTransaction({...newTransaction, description: e.target.value})} 
+                                onChange={e => setNewTransaction({...newTransaction, description: e.target.value.toUpperCase()})} 
                                 placeholder="Ex: Dízimo referente a Agosto"
                             />
                         </div>

@@ -288,10 +288,10 @@ export const Discipleship: React.FC<DiscipleshipProps> = ({ members, setMembers,
                               <form onSubmit={handleAddNote} className="mt-auto relative">
                                   <textarea
                                       rows={2}
-                                      className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm dark:text-white"
+                                      className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm dark:text-white uppercase"
                                       placeholder="Adicionar nova observação..."
                                       value={newNote}
-                                      onChange={e => setNewNote(e.target.value)}
+                                      onChange={e => setNewNote(e.target.value.toUpperCase())}
                                       onKeyDown={e => {
                                           if(e.key === 'Enter' && !e.shiftKey) {
                                               e.preventDefault();

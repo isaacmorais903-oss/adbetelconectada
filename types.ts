@@ -133,7 +133,7 @@ export interface InventoryItem {
   description?: string;
 }
 
-export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory' | 'discipleship' | 'pastoral';
+export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory' | 'discipleship' | 'pastoral' | 'calendar';
 
 export interface ChurchSettings {
     id?: string;

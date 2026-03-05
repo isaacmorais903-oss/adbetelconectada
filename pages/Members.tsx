@@ -242,8 +242,8 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome Completo</label>
-                  <input type="text" className={inputClass} disabled={readOnly}
-                      value={data.name || ''} onChange={e => onChange('name', e.target.value)} required />
+                  <input type="text" className={`${inputClass} uppercase`} disabled={readOnly}
+                      value={data.name || ''} onChange={e => onChange('name', e.target.value.toUpperCase())} required />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Data de Nascimento</label>
@@ -254,11 +254,11 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               {/* FILIAÇÃO */}
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome da Mãe</label>
-                  <input className={inputClass} disabled={readOnly} value={data.motherName || ''} onChange={e => onChange('motherName', e.target.value)} placeholder="Opcional para carteirinha" />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.motherName || ''} onChange={e => onChange('motherName', e.target.value.toUpperCase())} placeholder="Opcional para carteirinha" />
               </div>
               <div className="md:col-span-6">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome do Pai</label>
-                  <input className={inputClass} disabled={readOnly} value={data.fatherName || ''} onChange={e => onChange('fatherName', e.target.value)} placeholder="Opcional para carteirinha" />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.fatherName || ''} onChange={e => onChange('fatherName', e.target.value.toUpperCase())} placeholder="Opcional para carteirinha" />
               </div>
 
               <div className="md:col-span-4">
@@ -267,7 +267,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">RG</label>
-                  <input className={inputClass} disabled={readOnly} value={data.rg || ''} onChange={e => onChange('rg', e.target.value)} />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.rg || ''} onChange={e => onChange('rg', e.target.value.toUpperCase())} />
               </div>
               <div className="md:col-span-4">
                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado Civil</label>
@@ -281,11 +281,11 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
 
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nacionalidade</label>
-                  <input className={inputClass} disabled={readOnly} value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value)} />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.nationality || 'Brasileira'} onChange={e => onChange('nationality', e.target.value.toUpperCase())} />
               </div>
               <div className="md:col-span-5">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Naturalidade (Cidade)</label>
-                  <input className={inputClass} disabled={readOnly} value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value)} />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.naturalness || ''} onChange={e => onChange('naturalness', e.target.value.toUpperCase())} />
               </div>
               <div className="md:col-span-3">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">UF (Naturalidade)</label>
@@ -299,7 +299,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Profissão</label>
                   <div className="relative">
                       <Briefcase className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                      <input className={`${inputClass} pl-9`} disabled={readOnly} value={data.profession || ''} onChange={e => onChange('profession', e.target.value)} placeholder="Ex: Professor, Autônomo..." />
+                      <input className={`${inputClass} pl-9 uppercase`} disabled={readOnly} value={data.profession || ''} onChange={e => onChange('profession', e.target.value.toUpperCase())} placeholder="Ex: Professor, Autônomo..." />
                   </div>
               </div>
           </div>
@@ -326,12 +326,12 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               </div>
               <div className="md:col-span-9">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Endereço Completo</label>
-                  <input className={inputClass} disabled={readOnly} value={data.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Rua, Número, Bairro" />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.address || ''} onChange={e => onChange('address', e.target.value.toUpperCase())} placeholder="Rua, Número, Bairro" />
               </div>
               
               <div className="md:col-span-8">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cidade</label>
-                  <input className={inputClass} disabled={readOnly} value={data.city || ''} onChange={e => onChange('city', e.target.value)} />
+                  <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.city || ''} onChange={e => onChange('city', e.target.value.toUpperCase())} />
               </div>
               <div className="md:col-span-4">
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado (UF)</label>
@@ -356,10 +356,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                       <input 
                         type="text" 
                         autoFocus
-                        className={`${inputClass} flex-1`}
+                        className={`${inputClass} flex-1 uppercase`}
                         placeholder="Nome (ex: Jardim Esperança)"
                         value={newCongregationName}
-                        onChange={e => setNewCongregationName(e.target.value)}
+                        onChange={e => setNewCongregationName(e.target.value.toUpperCase())}
                       />
                       <button type="button" onClick={handleSaveCongregation} disabled={savingCongregation} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 disabled:opacity-50" title="Confirmar">
                           {savingCongregation ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <CheckCircle className="w-4 h-4"/>}
@@ -389,10 +389,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                         <input 
                             type="text" 
                             autoFocus
-                            className={`${inputClass} flex-1`}
+                            className={`${inputClass} flex-1 uppercase`}
                             placeholder="Ex: Tesoureiro"
                             value={newRoleName}
-                            onChange={e => setNewRoleName(e.target.value)}
+                            onChange={e => setNewRoleName(e.target.value.toUpperCase())}
                         />
                         <button type="button" onClick={handleSaveRole} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700" title="Confirmar"><CheckCircle className="w-4 h-4"/></button>
                         <button type="button" onClick={() => setIsAddingRole(false)} className="bg-slate-200 dark:bg-slate-700 text-slate-600 p-2 rounded-lg hover:bg-slate-300" title="Cancelar"><X className="w-4 h-4"/></button>
@@ -428,10 +428,10 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
                         <input 
                             type="text" 
                             autoFocus
-                            className={`${inputClass} flex-1`}
+                            className={`${inputClass} flex-1 uppercase`}
                             placeholder="Ex: Louvor, Infantil"
                             value={newMinistryName}
-                            onChange={e => setNewMinistryName(e.target.value)}
+                            onChange={e => setNewMinistryName(e.target.value.toUpperCase())}
                         />
                         <button type="button" onClick={handleSaveMinistry} disabled={savingMinistry} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 disabled:opacity-50" title="Confirmar">
                             {savingMinistry ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <CheckCircle className="w-4 h-4"/>}
@@ -455,7 +455,7 @@ const MemberFormContent: React.FC<MemberFormContentProps> = ({
               </div>
               <div className="md:col-span-6">
                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Igreja Anterior</label>
-                 <input className={inputClass} disabled={readOnly} value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value)} />
+                 <input className={`${inputClass} uppercase`} disabled={readOnly} value={data.previousChurch || ''} onChange={e => onChange('previousChurch', e.target.value.toUpperCase())} />
               </div>
 
               <div className="md:col-span-4">
@@ -987,8 +987,8 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="relative flex-1 max-w-md">
             <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            <input type="text" placeholder="Buscar por nome, cargo ou código..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input type="text" placeholder="Buscar por nome, cargo ou código..." className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white uppercase"
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value.toUpperCase())} />
           </div>
         </div>
 
@@ -1128,10 +1128,10 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                      <div>
                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Texto do Certificado / Observação</label>
                          <textarea 
-                            className={modalInputClass}
+                            className={`${modalInputClass} uppercase`}
                             rows={4}
                             value={certDesc}
-                            onChange={e => setCertDesc(e.target.value)}
+                            onChange={e => setCertDesc(e.target.value.toUpperCase())}
                          ></textarea>
                      </div>
 

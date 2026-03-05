@@ -193,9 +193,9 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
             <input 
               type="text" 
               placeholder="Buscar item por nome, categoria..." 
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 dark:text-white uppercase"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
             />
           </div>
           <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 bg-white dark:bg-slate-800 shadow-sm transition-all">
@@ -302,9 +302,9 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
                         <input 
                             type="text" 
                             required
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase" 
                             value={currentItem.name || ''} 
-                            onChange={e => setCurrentItem({...currentItem, name: e.target.value})}
+                            onChange={e => setCurrentItem({...currentItem, name: e.target.value.toUpperCase()})}
                             placeholder="Ex: Projetor Epson X20"
                         />
                     </div>
@@ -330,9 +330,9 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Localização</label>
                         <input 
                             type="text" 
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase" 
                             value={currentItem.location || ''} 
-                            onChange={e => setCurrentItem({...currentItem, location: e.target.value})}
+                            onChange={e => setCurrentItem({...currentItem, location: e.target.value.toUpperCase()})}
                             placeholder="Ex: Templo, Sala 1"
                         />
                     </div>
@@ -388,9 +388,9 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição / Observações</label>
                         <textarea 
                             rows={3}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" 
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none uppercase" 
                             value={currentItem.description || ''} 
-                            onChange={e => setCurrentItem({...currentItem, description: e.target.value})}
+                            onChange={e => setCurrentItem({...currentItem, description: e.target.value.toUpperCase()})}
                             placeholder="Número de série, detalhes da cor, fornecedor..."
                         ></textarea>
                     </div>

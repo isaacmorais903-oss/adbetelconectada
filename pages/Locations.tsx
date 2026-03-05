@@ -245,7 +245,7 @@ export const Locations: React.FC = () => {
 
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Nome do Local</label>
-                          <input type="text" className={inputClass} required value={newLocation.name || ''} onChange={e => setNewLocation({...newLocation, name: e.target.value})} placeholder="Ex: Congregação Vale da Bênção" />
+                          <input type="text" className={`${inputClass} uppercase`} required value={newLocation.name || ''} onChange={e => setNewLocation({...newLocation, name: e.target.value.toUpperCase()})} placeholder="Ex: Congregação Vale da Bênção" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Tipo</label>
@@ -257,15 +257,15 @@ export const Locations: React.FC = () => {
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Endereço</label>
-                          <input type="text" className={inputClass} required value={newLocation.address || ''} onChange={e => setNewLocation({...newLocation, address: e.target.value})} placeholder="Rua, Número, Bairro" />
+                          <input type="text" className={`${inputClass} uppercase`} required value={newLocation.address || ''} onChange={e => setNewLocation({...newLocation, address: e.target.value.toUpperCase()})} placeholder="Rua, Número, Bairro" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Cidade - UF</label>
-                          <input type="text" className={inputClass} required value={newLocation.city || ''} onChange={e => setNewLocation({...newLocation, city: e.target.value})} />
+                          <input type="text" className={`${inputClass} uppercase`} required value={newLocation.city || ''} onChange={e => setNewLocation({...newLocation, city: e.target.value.toUpperCase()})} />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Horários de Culto</label>
-                          <input type="text" className={inputClass} required value={newLocation.serviceTimes || ''} onChange={e => setNewLocation({...newLocation, serviceTimes: e.target.value})} placeholder="Dom: 19h | Qua: 20h" />
+                          <input type="text" className={`${inputClass} uppercase`} required value={newLocation.serviceTimes || ''} onChange={e => setNewLocation({...newLocation, serviceTimes: e.target.value.toUpperCase()})} placeholder="Dom: 19h | Qua: 20h" />
                       </div>
 
                       <div>

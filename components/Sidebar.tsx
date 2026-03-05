@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X, Sprout } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, Church, DollarSign, MapPin, HeartHandshake, CircleUser, RefreshCw, Moon, Sun, Package, Eye, EyeOff, Facebook, Instagram, Youtube, Settings, Lock, X, Sprout, Calendar } from 'lucide-react';
 import { View, UserRole } from '../types';
 import { APP_CONFIG } from '../config';
 import { supabase, isConfigured } from '../services/supabase';
@@ -89,6 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'pastoral', label: 'Pastoral', icon: HeartHandshake }, // NOVO ITEM
         { id: 'finance', label: 'Tesouraria', icon: DollarSign },
         { id: 'inventory', label: 'Patrimônio', icon: Package }, 
+        { id: 'calendar', label: 'Calendário', icon: Calendar }, // NOVO ITEM
         { id: 'announcements', label: 'Avisos & Eventos', icon: Bell },
         { id: 'prayers', label: 'Pedidos de Oração', icon: HeartHandshake },
         { id: 'locations', label: 'Endereços & Sede', icon: MapPin },
@@ -96,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     : [
         { id: 'dashboard', label: 'Meu Painel', icon: LayoutDashboard },
         { id: 'members', label: 'Meus Dados', icon: CircleUser },
+        { id: 'calendar', label: 'Calendário', icon: Calendar }, // NOVO ITEM
         { id: 'finance', label: 'Contribuição', icon: DollarSign },
         { id: 'announcements', label: 'Mural de Avisos', icon: Bell },
         { id: 'prayers', label: 'Pedidos de Oração', icon: HeartHandshake },

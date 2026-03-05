@@ -10,7 +10,7 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onChangeView }) => {
   const navItems = [
     { id: 'dashboard', label: 'Início', icon: Home },
-    { id: 'announcements', label: 'Agenda', icon: Calendar },
+    { id: 'calendar', label: 'Calendário', icon: Calendar },
     { id: 'finance', label: 'Doar', icon: DollarSign },
     { id: 'members', label: 'Perfil', icon: User },
   ];

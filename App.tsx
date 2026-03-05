@@ -11,6 +11,7 @@ import { Prayers } from './pages/Prayers';
 import { Inventory } from './pages/Inventory'; 
 import { Discipleship } from './pages/Discipleship'; // Importa Nova Página
 import { PastoralCare } from './pages/PastoralCare'; // Importa Nova Página
+import Calendar from './pages/Calendar'; // Importa Nova Página
 import { Login } from './pages/Login';
 import { View, UserRole, Member, Transaction, InventoryItem } from './types';
 import { Bell, LogOut, Home, Moon, Sun, Eye, EyeOff, Settings, Lock, X, RefreshCw } from 'lucide-react';
@@ -263,6 +264,7 @@ const App: React.FC = () => {
       case 'pastoral':
         return <PastoralCare userRole={userRole} currentUserEmail={session?.user?.email} members={members} />;
 
+      case 'calendar': return <Calendar />;
       case 'announcements': return <Announcements />;
       case 'locations': return <Locations />;
       case 'prayers': return <Prayers />;
@@ -280,6 +282,7 @@ const App: React.FC = () => {
       case 'locations': return 'Endereços';
       case 'prayers': return 'Orações';
       case 'discipleship': return 'Discipulado';
+      case 'calendar': return 'Calendário';
       default: return '';
     }
   };

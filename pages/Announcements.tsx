@@ -120,9 +120,9 @@ export const Announcements: React.FC = () => {
               <input 
                 type="text" 
                 required
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
                 value={newAnnouncement.title}
-                onChange={e => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
+                onChange={e => setNewAnnouncement({...newAnnouncement, title: e.target.value.toUpperCase()})}
                 placeholder="Ex: Culto de Jovens"
               />
             </div>
@@ -151,10 +151,10 @@ export const Announcements: React.FC = () => {
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  className="flex-1 px-3 py-1.5 text-sm border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="flex-1 px-3 py-1.5 text-sm border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 uppercase"
                   placeholder="Ex: Convite para ceia..."
                   value={aiTopic}
-                  onChange={e => setAiTopic(e.target.value)}
+                  onChange={e => setAiTopic(e.target.value.toUpperCase())}
                 />
                 <button 
                   type="button"
@@ -172,9 +172,9 @@ export const Announcements: React.FC = () => {
               <textarea 
                 required
                 rows={5}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none uppercase"
                 value={newAnnouncement.content}
-                onChange={e => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
+                onChange={e => setNewAnnouncement({...newAnnouncement, content: e.target.value.toUpperCase()})}
                 placeholder="Digite o aviso completo aqui..."
               ></textarea>
             </div>
