@@ -959,7 +959,23 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
     }
   };
 
-  const handleGenerateCard = (member: Member) => generateMembershipCard(member);
+  const handleGenerateCard = async (member: Member) => {
+      let fullMember = member;
+      // Se faltar dados importantes (ex: CPF ou Nome do Pai), tenta buscar do banco
+      // Isso corrige o problema onde a lista vem da view pública (sem dados sensíveis)
+      if ((!member.cpf || !member.fatherName) && isConfigured) {
+          try {
+              const { data, error } = await supabase.from('members').select('*').eq('id', member.id).single();
+              if (data && !error) {
+                  console.log("Dados completos carregados para carteirinha:", data);
+                  fullMember = data;
+              }
+          } catch (e) {
+              console.error("Erro ao buscar dados completos para carteirinha:", e);
+          }
+      }
+      generateMembershipCard(fullMember);
+  };
   
   const handleGenerateCertificate = () => {
     if(selectedMemberForCert) {

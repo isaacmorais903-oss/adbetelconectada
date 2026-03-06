@@ -54,39 +54,48 @@ export const generateMembershipCard = async (member: Member) => {
     // =====================================================================
     
     // NOME
-    doc.setFontSize(8); // Reduzido de 9
-    doc.text(member.name.toUpperCase(), 6, 27); // X: 4->6, Y: 26->27
+    doc.setFontSize(8); 
+    doc.text(member.name.toUpperCase(), 6, 27); 
 
     // FUNÇÃO
-    doc.setFontSize(8); // Reduzido de 9
-    doc.text(member.role.toUpperCase(), 6, 34); // X: 4->6, Y: 33->34
+    doc.setFontSize(8); 
+    doc.text(member.role.toUpperCase(), 6, 34); 
 
     // MINISTÉRIO / DEP. (Esquerda)
-    doc.setFontSize(7); // Reduzido de 8
-    doc.text((member.ministry || "").toUpperCase(), 6, 41); // X: 4->6, Y: 40->41
+    doc.setFontSize(7); 
+    doc.text((member.ministry || "").toUpperCase(), 6, 41); 
 
     // CÓDIGO / REGISTRO (Direita)
     const code = member.code || member.id.substring(0, 8).toUpperCase();
-    doc.setFontSize(7); // Reduzido de 8
-    doc.text(code, 38, 41); // X: 35->38, Y: 40->41
+    doc.setFontSize(7); 
+    doc.text(code, 38, 41); 
 
     // CONGREGAÇÃO (Esquerda)
-    doc.setFontSize(7); // Reduzido de 8
-    doc.text((member.congregation || "SEDE").toUpperCase(), 6, 48); // X: 4->6, Y: 47->48
+    // Exibe apenas o nome da congregação (remove "Congregação" ou código se houver)
+    // Ex: "002 - Jardim" -> "JARDIM"
+    // Ex: "Congregação Samaria" -> "SAMARIA"
+    let congName = (member.congregation || "SEDE").toUpperCase();
+    if (congName.includes(' - ')) {
+        congName = congName.split(' - ')[1] || congName;
+    }
+    congName = congName.replace('CONGREGAÇÃO ', '').trim();
+    
+    doc.setFontSize(7); 
+    doc.text(congName, 6, 49); // Y: 48 -> 49 (Abaixar um pouquinho)
 
     // DATA DE VALIDADE (Direita)
     const validade = new Date();
     validade.setFullYear(validade.getFullYear() + 1);
     const validadeStr = validade.toLocaleDateString('pt-BR');
-    doc.setFontSize(7); // Reduzido de 8
-    doc.text(validadeStr, 38, 48); // X: 35->38, Y: 47->48
+    doc.setFontSize(7); 
+    doc.text(validadeStr, 38, 49); // Y: 48 -> 49
 
     // FOTO DO MEMBRO
-    // Ajuste para preencher o espaço branco (mais para esquerda e baixo)
-    const photoX = 60; // 63 -> 60
-    const photoY = 23; // 22 -> 23
-    const photoW = 22; // 20 -> 22 (Aumentar um pouco para preencher)
-    const photoH = 28; // 26 -> 28
+    // Ajuste para preencher o espaço branco (mais para esquerda)
+    const photoX = 59; // 60 -> 59
+    const photoY = 23; 
+    const photoW = 23; // 22 -> 23
+    const photoH = 28; 
 
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
       try {
@@ -102,32 +111,41 @@ export const generateMembershipCard = async (member: Member) => {
     // =====================================================================
     const offsetX = 85.6;
 
-    // Ajuste Geral Verso: Mais para direita (+2mm) e mais para cima (-5mm)
-    const versoX = offsetX + 6; // Era +4
+    // Ajuste Geral Verso: Mais para direita e ABAIXAR MAIS
+    const versoX = offsetX + 8; // X: +6 -> +8
+
+    // Debug para verificar se os dados estão chegando
+    console.log("Dados Verso:", {
+        pai: member.fatherName,
+        mae: member.motherName,
+        nat: member.naturalness,
+        cpf: member.cpf,
+        rg: member.rg
+    });
 
     // PAI
-    doc.setFontSize(7); // Ajustado para 7 para caber melhor
-    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), versoX, 14); // Y: 19 -> 14
+    doc.setFontSize(7); 
+    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), versoX, 17); // Y: 14 -> 17
 
     // MÃE
     doc.setFontSize(7);
-    doc.text((member.motherName || "").toUpperCase().substring(0, 40), versoX, 21); // Y: 26 -> 21
+    doc.text((member.motherName || "").toUpperCase().substring(0, 40), versoX, 24); // Y: 21 -> 24
 
     // NACIONALIDADE (Esquerda)
     doc.setFontSize(7);
-    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), versoX, 28); // Y: 33 -> 28
+    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), versoX, 31); // Y: 28 -> 31
 
     // NATURALIDADE (Direita)
     const nat = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "";
-    doc.text(nat.toUpperCase().substring(0, 25), versoX + 42, 28); // Y: 33 -> 28, X ajustado
+    doc.text(nat.toUpperCase().substring(0, 25), versoX + 42, 31); // Y: 28 -> 31
 
     // CPF (Esquerda)
     doc.setFontSize(7);
-    doc.text((member.cpf || ""), versoX, 35); // Y: 40 -> 35
+    doc.text((member.cpf || ""), versoX, 38); // Y: 35 -> 38
 
     // RG (Direita)
     doc.setFontSize(7);
-    doc.text((member.rg || ""), versoX + 42, 35); // Y: 40 -> 35
+    doc.text((member.rg || ""), versoX + 42, 38); // Y: 35 -> 38
 
     // Salva o PDF
     doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
