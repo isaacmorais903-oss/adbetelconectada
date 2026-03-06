@@ -176,68 +176,95 @@ export const generateCertificate = async (member: Member, type: string, descript
     doc.setLineWidth(0.5);
     doc.rect(15, 15, width - 30, height - 30);
     
+    // Variável para controlar a posição vertical dinâmica
+    let currentY = 20;
+
     // 1. CARREGA O LOGO DA IGREJA (Cabeçalho)
     try {
       const logoImg = await loadImage('/logo_adbetel.png');
-      // Ajuste as dimensões e posição do logo conforme necessário
-      // Exemplo: Centralizado no topo, 40mm de largura, 40mm de altura
-      const logoW = 40;
-      const logoH = 40;
-      doc.addImage(logoImg, 'PNG', (width / 2) - (logoW / 2), 20, logoW, logoH);
+      // Ajuste para imagem 600x200 (Proporção 3:1)
+      // Aumentando a largura para ficar bem distribuído e legível no topo
+      const logoW = 120; 
+      const logoH = 40; // Mantendo proporção 3:1 (120/40)
+      
+      doc.addImage(logoImg, 'PNG', (width / 2) - (logoW / 2), currentY, logoW, logoH);
+      currentY += logoH + 10; // Avança o cursor Y (40 + 10 de margem)
     } catch (e) {
       console.warn("Logo da igreja não encontrado para o certificado.");
+      currentY += 40; // Espaço reservado mesmo sem logo
     }
 
-    // Linhas Assinatura
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 0, 0);
-    doc.line(40, 180, 110, 180);
-    doc.line(186, 180, 256, 180);
-
-    // Texto
+    // TÍTULO: CERTIFICADO
     doc.setFont("times", "bold");
     doc.setFontSize(40);
     doc.setTextColor(50, 50, 50);
-    // Movemos o título "CERTIFICADO" um pouco mais para baixo para dar espaço ao logo
-    doc.text("CERTIFICADO", width / 2, 75, { align: "center" });
+    doc.text("CERTIFICADO", width / 2, currentY + 10, { align: "center" });
+    currentY += 25;
 
+    // TIPO (BATISMO, APRESENTAÇÃO, ETC)
     doc.setFont("times", "bold");
     doc.setFontSize(24);
     doc.setTextColor(37, 99, 235); // Blue
-    doc.text(type.toUpperCase(), width / 2, 90, { align: "center" });
+    doc.text(type.toUpperCase(), width / 2, currentY, { align: "center" });
+    currentY += 15;
 
+    // TEXTO INTRODUTÓRIO
     doc.setFont("times", "normal");
     doc.setFontSize(16);
     doc.setTextColor(80, 80, 80);
     const text = `Certificamos que, para os devidos fins,`;
-    doc.text(text, width / 2, 105, { align: "center" });
+    doc.text(text, width / 2, currentY, { align: "center" });
+    currentY += 20;
 
+    // NOME DO MEMBRO
     doc.setFont("times", "bolditalic");
     doc.setFontSize(32);
     doc.setTextColor(0, 0, 0);
-    doc.text(member.name, width / 2, 125, { align: "center" });
+    doc.text(member.name, width / 2, currentY, { align: "center" });
+    currentY += 10;
     
+    // MATRÍCULA
     if(member.code) {
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 100, 100);
-        doc.text(`Matrícula: ${member.code}`, width / 2, 135, { align: "center" });
+        doc.text(`Matrícula: ${member.code}`, width / 2, currentY, { align: "center" });
+        currentY += 15;
+    } else {
+        currentY += 10;
     }
 
+    // DESCRIÇÃO / OBSERVAÇÃO
     doc.setFont("times", "normal");
     doc.setFontSize(16);
     doc.setTextColor(80, 80, 80);
-    const descSplit = doc.splitTextToSize(description, 200);
-    doc.text(descSplit, width / 2, 150, { align: "center" });
+    // Aumentando a largura permitida para o texto (antes 200, agora 240 para aproveitar a folha A4 Landscape)
+    const descSplit = doc.splitTextToSize(description, 240);
+    doc.text(descSplit, width / 2, currentY, { align: "center" });
+    
+    // Calcula a altura ocupada pelo texto da descrição para posicionar a data
+    const lineHeight = 7; // Altura aproximada da linha para fonte 16
+    const textHeight = descSplit.length * lineHeight;
+    currentY += textHeight + 10;
 
+    // DATA E LOCAL
     const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
     doc.setFontSize(14);
-    doc.text(`Cristalina - GO, ${dateStr}`, width / 2, 165, { align: "center" });
+    doc.text(`Cristalina - GO, ${dateStr}`, width / 2, currentY, { align: "center" });
+
+    // ASSINATURAS (RODAPÉ)
+    // Mantemos fixo na parte inferior para padrão visual
+    const footerY = 180;
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 0, 0);
+    doc.line(40, footerY, 110, footerY);
+    doc.line(186, footerY, 256, footerY);
 
     doc.setFontSize(12);
     doc.setTextColor(0,0,0);
-    doc.text("Pr. Presidente Jeziel", 75, 187, { align: "center" });
-    doc.text("Secretaria Geral", 221, 187, { align: "center" });
+    doc.text("Pr. Presidente Jeziel", 75, footerY + 7, { align: "center" });
+    doc.text("Secretaria Geral", 221, footerY + 7, { align: "center" });
 
     doc.save(`certificado_${type.replace(/\s+/g, '_').toLowerCase()}_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
   
