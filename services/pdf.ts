@@ -346,6 +346,251 @@ export const generateLgpdTerm = (member: Member) => {
     doc.save(`Termo_LGPD_${member.name.replace(/\s+/g, '_')}.pdf`);
 };
 
+export const generateMemberFile = async (member: Member) => {
+  const doc = new jsPDF();
+  const width = doc.internal.pageSize.getWidth();
+  
+  try {
+    let currentY = 20;
+
+    // 1. CABEÇALHO (LOGO)
+    try {
+      const logoImg = await loadImage('/logo_adbetel.png');
+      const logoW = 50; 
+      const logoH = 16.6; // Proporção 3:1
+      doc.addImage(logoImg, 'PNG', (width / 2) - (logoW / 2), currentY, logoW, logoH);
+      currentY += logoH + 10;
+    } catch (e) {
+      currentY += 20;
+    }
+
+    // TÍTULO
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(30, 58, 138); // Blue 900
+    doc.text("FICHA CADASTRAL DE MEMBRO", width / 2, currentY, { align: "center" });
+    currentY += 15;
+
+    // FOTO DO MEMBRO
+    if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
+        try {
+            const photoW = 30;
+            const photoH = 40;
+            const photoX = width - 45; // Canto superior direito
+            const photoY = 40; // Fixo no topo
+            
+            const profilePic = await loadImage(member.photoUrl);
+            doc.addImage(profilePic, 'JPEG', photoX, photoY, photoW, photoH);
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(photoX, photoY, photoW, photoH); // Borda na foto
+        } catch (e) {
+            console.log("Erro ao carregar foto para ficha");
+        }
+    }
+
+    // DADOS PESSOAIS
+    doc.setFillColor(241, 245, 249); // Slate 100
+    doc.rect(14, currentY - 5, width - 28, 8, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text("1. DADOS PESSOAIS", 16, currentY);
+    currentY += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Nome Completo:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.name.toUpperCase(), 16, currentY + 5);
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Data de Nascimento:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    const birthDate = member.birthDate ? new Date(member.birthDate).toLocaleDateString('pt-BR') : "--/--/----";
+    doc.text(birthDate, 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("CPF:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.cpf || "---", 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("RG:", 60, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.rg || "---", 60, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Estado Civil:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.maritalStatus || "---", 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Naturalidade:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    const naturalness = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "---";
+    doc.text(naturalness.toUpperCase(), 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Nacionalidade:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.nationality || "Brasileira").toUpperCase(), 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Nome do Pai:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.fatherName || "---").toUpperCase(), 16, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Nome da Mãe:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.motherName || "---").toUpperCase(), 16, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Profissão:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.profession || "---").toUpperCase(), 16, currentY + 5);
+
+    currentY += 15;
+
+    // CONTATO E ENDEREÇO
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, currentY - 5, width - 28, 8, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("2. CONTATO E ENDEREÇO", 16, currentY);
+    currentY += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Endereço:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.address || "---").toUpperCase(), 16, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Cidade/UF:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    const cityState = member.city ? `${member.city} - ${member.state || ''}` : "---";
+    doc.text(cityState.toUpperCase(), 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("CEP:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.postalCode || "---", 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Telefone/WhatsApp:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.phone || "---", 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Email:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.email || "---", 120, currentY + 5);
+
+    currentY += 15;
+
+    // DADOS ECLESIÁSTICOS
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, currentY - 5, width - 28, 8, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("3. DADOS ECLESIÁSTICOS", 16, currentY);
+    currentY += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Congregação:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.congregation || "---").toUpperCase(), 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Cargo/Função:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.role || "Membro").toUpperCase(), 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Ministério/Departamento:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.ministry || "---").toUpperCase(), 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Situação:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.status || "Ativo").toUpperCase(), 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Data de Admissão:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    const joinedAt = member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('pt-BR') : "---";
+    doc.text(joinedAt, 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Código de Membro:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.code || "---", 120, currentY + 5);
+
+    currentY += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Batismo nas Águas:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    const baptism = member.baptismDate ? new Date(member.baptismDate).toLocaleDateString('pt-BR') : "---";
+    doc.text(baptism, 16, currentY + 5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Batismo Espírito Santo:", 120, currentY);
+    doc.setFont("helvetica", "normal");
+    const holySpirit = member.holySpiritBaptismDate ? new Date(member.holySpiritBaptismDate).toLocaleDateString('pt-BR') : "---";
+    doc.text(holySpirit, 120, currentY + 5);
+
+    currentY += 12;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Igreja Anterior:", 16, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text((member.previousChurch || "---").toUpperCase(), 16, currentY + 5);
+
+    // RODAPÉ COM ASSINATURAS
+    currentY = 250;
+    
+    const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.setFontSize(10);
+    doc.text(`Emitido em: ${dateStr}`, width / 2, currentY - 15, { align: "center" });
+
+    doc.setLineWidth(0.5);
+    doc.line(20, currentY, 90, currentY);
+    doc.line(120, currentY, 190, currentY);
+
+    doc.setFontSize(9);
+    doc.text("Assinatura do Membro", 55, currentY + 5, { align: "center" });
+    doc.text("Secretaria da Igreja", 155, currentY + 5, { align: "center" });
+
+    doc.save(`Ficha_Membro_${member.name.replace(/\s+/g, '_')}.pdf`);
+
+  } catch (error) {
+    console.error("Erro ao gerar ficha:", error);
+    alert("Erro ao gerar ficha de membro.");
+  }
+};
+
 export const generateFinancialReport = (transactions: Transaction[]) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();

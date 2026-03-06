@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Users, Heart, Calendar, DollarSign, PlusCircle, FileText, Send, BookOpen, Clock, Music, MapPin, Youtube, HeartHandshake, User, ChevronRight, Save, Upload, FileSpreadsheet, Share2, Facebook, Instagram, ExternalLink, X } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard';
-import { UserRole, View, ChurchSettings, Member, MemberStatus } from '../types';
+import { Announcement, AnnouncementType, UserRole, View, ChurchSettings, Member, MemberStatus } from '../types';
 import { supabase, isConfigured } from '../services/supabase';
 
 interface DashboardProps {
@@ -23,6 +23,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
       youtube_url: ''
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
+  // Estados para Eventos
+  const [upcomingEvents, setUpcomingEvents] = useState<Announcement[]>([]);
+  const [nextService, setNextService] = useState<Announcement | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
   // Calcula membros ativos
   const activeMembersCount = members.filter(m => m.status === MemberStatus.ACTIVE).length;
@@ -64,7 +69,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         }
     };
     loadSettings();
+    fetchUpcomingEvents();
   }, []);
+
+  const fetchUpcomingEvents = async () => {
+      if (!isConfigured) {
+          setLoadingEvents(false);
+          return;
+      }
+
+      try {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Começo do dia
+
+          const { data, error } = await supabase
+              .from('announcements')
+              .select('*')
+              .gte('date', today.toISOString())
+              .in('type', [AnnouncementType.EVENT, AnnouncementType.CULT, AnnouncementType.LECTURE, AnnouncementType.OTHER])
+              .order('date', { ascending: true })
+              .limit(5);
+
+          if (data) {
+              setUpcomingEvents(data);
+              
+              // Encontrar o próximo culto
+              const nextCult = data.find(e => e.type === AnnouncementType.CULT);
+              if (nextCult) {
+                  setNextService(nextCult);
+              }
+          }
+      } catch (error) {
+          console.error("Erro ao buscar eventos:", error);
+      } finally {
+          setLoadingEvents(false);
+      }
+  };
 
   const handleSaveSocial = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -424,14 +464,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                     <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-xs font-bold mb-2 backdrop-blur-sm border border-white/20">
                         PRÓXIMO CULTO
                     </span>
-                    <h2 className="text-2xl font-bold mb-1">Culto da Família</h2>
+                    <h2 className="text-2xl font-bold mb-1">
+                        {nextService ? nextService.title : 'Culto da Família'}
+                    </h2>
                     <div className="flex items-center gap-2 text-blue-200 text-sm">
                         <Clock className="w-4 h-4" />
-                        <span>Domingo, 18:00h</span>
+                        <span>
+                            {nextService 
+                                ? new Date(nextService.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+                                : 'Domingo, 18:00h'
+                            }
+                        </span>
                     </div>
                 </div>
                 <div className="hidden sm:block">
-                     <button className="bg-white text-blue-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors">
+                     <button onClick={() => onChangeView?.('announcements')} className="bg-white text-blue-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors">
                         Ver Detalhes
                      </button>
                 </div>
@@ -469,6 +516,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 })}
             </div>
         </div>
+
+        {/* Upcoming Events List */}
+        {upcomingEvents.length > 0 && (
+            <div>
+                <div className="flex items-center justify-between mb-4 px-1">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Próximos Eventos</h3>
+                    <button onClick={() => onChangeView?.('announcements')} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">Ver todos</button>
+                </div>
+                <div className="space-y-3">
+                    {upcomingEvents.slice(0, 3).map((event) => (
+                        <div key={event.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+                            <div className={`p-3 rounded-xl flex-shrink-0 ${
+                                event.type === AnnouncementType.CULT ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
+                                event.type === AnnouncementType.EVENT ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' :
+                                'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                            }`}>
+                                <Calendar className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-slate-800 dark:text-white truncate">{event.title}</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(event.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         {/* Highlights / News Feed */}
         <div className="space-y-4">

@@ -203,6 +203,16 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='church_settings' AND column_name='financial_pin') THEN
         ALTER TABLE church_settings ADD COLUMN "financial_pin" TEXT DEFAULT '0000';
     END IF;
+
+    -- Announcements: type (Garante compatibilidade com Dashboard)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='announcements' AND column_name='type') THEN
+        ALTER TABLE announcements ADD COLUMN type TEXT DEFAULT 'Geral';
+    END IF;
+
+    -- Announcements: date (Garante compatibilidade com Dashboard)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='announcements' AND column_name='date') THEN
+        ALTER TABLE announcements ADD COLUMN date DATE DEFAULT NOW();
+    END IF;
 END
 $$;
 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Camera, User, Droplet, Sparkles, Edit2, CreditCard, Church, MapPin, Briefcase, Trash2, FileBadge, CheckCircle, X, Hash, ShieldCheck, FileText, Lock, AlertCircle, Users } from 'lucide-react';
 import { Member, MemberStatus, UserRole } from '../types';
-import { generateMembershipCard, generateCertificate } from '../services/pdf';
+import { generateMembershipCard, generateCertificate, generateMemberFile } from '../services/pdf';
 import { supabase, isConfigured } from '../services/supabase';
 import { APP_CONFIG } from '../config';
 
@@ -976,6 +976,21 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
       }
       generateMembershipCard(fullMember);
   };
+
+  const handleGenerateFile = async (member: Member) => {
+      let fullMember = member;
+      if ((!member.cpf || !member.fatherName) && isConfigured) {
+          try {
+              const { data, error } = await supabase.from('members').select('*').eq('id', member.id).single();
+              if (data && !error) {
+                  fullMember = data;
+              }
+          } catch (e) {
+              console.error("Erro ao buscar dados completos para ficha:", e);
+          }
+      }
+      generateMemberFile(fullMember);
+  };
   
   const handleGenerateCertificate = () => {
     if(selectedMemberForCert) {
@@ -1057,6 +1072,7 @@ export const Members: React.FC<MembersProps> = ({ userRole, privacyMode = false,
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                         <button onClick={() => handleGenerateCard(member)} className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded" title="Carteirinha"><CreditCard className="w-5 h-5"/></button>
+                        <button onClick={() => handleGenerateFile(member)} className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded" title="Ficha de Membro"><FileText className="w-5 h-5"/></button>
                         <button onClick={() => openCertModal(member)} className="text-amber-600 hover:text-amber-800 p-2 hover:bg-amber-50 rounded" title="Gerar Certificado"><FileBadge className="w-5 h-5"/></button>
                         <button onClick={() => openEditModal(member)} className="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 rounded" title="Editar"><Edit2 className="w-5 h-5" /></button>
                         {userRole === 'admin' && (
