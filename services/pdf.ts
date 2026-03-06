@@ -356,37 +356,43 @@ export const generateMemberFile = async (member: Member) => {
     // 1. CABEÇALHO (LOGO)
     try {
       const logoImg = await loadImage('/logo_adbetel.png');
-      const logoW = 50; 
-      const logoH = 16.6; // Proporção 3:1
-      doc.addImage(logoImg, 'PNG', (width / 2) - (logoW / 2), currentY, logoW, logoH);
-      currentY += logoH + 10;
+      // Aumentado e alinhado à esquerda
+      const logoW = 70; 
+      const logoH = 23; 
+      doc.addImage(logoImg, 'PNG', 14, 14, logoW, logoH);
     } catch (e) {
-      currentY += 20;
+      // Ignora erro
     }
 
     // TÍTULO
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
+    doc.setFontSize(22); // Aumentado
     doc.setTextColor(30, 58, 138); // Blue 900
-    doc.text("FICHA CADASTRAL DE MEMBRO", width / 2, currentY, { align: "center" });
-    currentY += 15;
-
+    // Alinhado à esquerda, abaixo do logo
+    doc.text("FICHA CADASTRAL DE MEMBRO", 14, 45, { align: "left" });
+    
     // FOTO DO MEMBRO
+    // Mantém no canto superior direito
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
         try {
             const photoW = 30;
             const photoH = 40;
-            const photoX = width - 45; // Canto superior direito
-            const photoY = 40; // Fixo no topo
+            const photoX = width - 45; 
+            const photoY = 14; // Alinhado com o topo do logo
             
             const profilePic = await loadImage(member.photoUrl);
             doc.addImage(profilePic, 'JPEG', photoX, photoY, photoW, photoH);
             doc.setDrawColor(200, 200, 200);
-            doc.rect(photoX, photoY, photoW, photoH); // Borda na foto
+            doc.rect(photoX, photoY, photoW, photoH); 
         } catch (e) {
             console.log("Erro ao carregar foto para ficha");
         }
     }
+
+    // Ajuste de Y para começar os dados (evitar sobreposição com foto)
+    // Foto vai de 14 até 54. Título vai até ~45. 
+    // Vamos dar um bom espaço.
+    currentY = 70;
 
     // DADOS PESSOAIS
     doc.setFillColor(241, 245, 249); // Slate 100
@@ -569,7 +575,8 @@ export const generateMemberFile = async (member: Member) => {
     doc.text((member.previousChurch || "---").toUpperCase(), 16, currentY + 5);
 
     // RODAPÉ COM ASSINATURAS
-    currentY = 250;
+    // Aumentado para 270 para dar mais espaço e evitar sobreposição
+    currentY = 270;
     
     const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
     doc.setFontSize(10);

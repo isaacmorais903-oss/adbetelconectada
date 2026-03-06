@@ -15,6 +15,7 @@ export default function Calendar() {
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventContent, setNewEventContent] = useState('');
   const [newEventType, setNewEventType] = useState<AnnouncementType>(AnnouncementType.EVENT);
+  const [newEventTime, setNewEventTime] = useState('19:30'); // Horário padrão
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Announcement | null>(null);
 
@@ -84,6 +85,7 @@ export default function Calendar() {
     setNewEventTitle('');
     setNewEventContent('');
     setNewEventType(AnnouncementType.EVENT);
+    setNewEventTime('19:30');
   };
 
   const getEventsForDay = (day: number) => {
@@ -110,6 +112,12 @@ export default function Calendar() {
     if (!selectedDate || !newEventTitle || !newEventContent) return;
 
     try {
+      // Combine Date and Time
+      const [hours, minutes] = newEventTime.split(':').map(Number);
+      const eventDateTime = new Date(selectedDate);
+      eventDateTime.setHours(hours, minutes, 0, 0);
+      const isoDate = eventDateTime.toISOString();
+
       if (editingEvent) {
         // Update existing event
         const { error } = await supabase
@@ -118,6 +126,7 @@ export default function Calendar() {
             title: newEventTitle,
             content: newEventContent,
             type: newEventType,
+            date: isoDate
           })
           .eq('id', editingEvent.id);
 
@@ -131,7 +140,7 @@ export default function Calendar() {
               title: newEventTitle,
               content: newEventContent,
               type: newEventType,
-              date: selectedDate.toISOString().split('T')[0],
+              date: isoDate,
             }
           ]);
 
@@ -143,6 +152,7 @@ export default function Calendar() {
       setNewEventTitle('');
       setNewEventContent('');
       setNewEventType(AnnouncementType.EVENT);
+      setNewEventTime('19:30');
       setEditingEvent(null);
       setShowAddEventForm(false);
     } catch (error) {
@@ -156,6 +166,13 @@ export default function Calendar() {
     setNewEventTitle(event.title);
     setNewEventContent(event.content);
     setNewEventType(event.type);
+    
+    // Extract time from event.date
+    const dateObj = new Date(event.date);
+    const hours = dateObj.getHours().toString().padStart(2, '0');
+    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+    setNewEventTime(`${hours}:${minutes}`);
+
     setShowAddEventForm(true);
   };
 
@@ -349,6 +366,7 @@ export default function Calendar() {
                         setNewEventTitle('');
                         setNewEventContent('');
                         setNewEventType(AnnouncementType.EVENT);
+                        setNewEventTime('19:30');
                       }}
                       className="w-full py-2 flex items-center justify-center gap-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
                     >
@@ -366,16 +384,24 @@ export default function Calendar() {
                         value={newEventTitle}
                         onChange={e => setNewEventTitle(e.target.value.toUpperCase())}
                       />
-                      <select
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={newEventType}
-                        onChange={e => setNewEventType(e.target.value as AnnouncementType)}
-                      >
-                        <option value={AnnouncementType.EVENT}>Evento</option>
-                        <option value={AnnouncementType.CULT}>Culto</option>
-                        <option value={AnnouncementType.LECTURE}>Palestra</option>
-                        <option value={AnnouncementType.OTHER}>Outros</option>
-                      </select>
+                      <div className="flex gap-2">
+                        <select
+                            className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newEventType}
+                            onChange={e => setNewEventType(e.target.value as AnnouncementType)}
+                        >
+                            <option value={AnnouncementType.EVENT}>Evento</option>
+                            <option value={AnnouncementType.CULT}>Culto</option>
+                            <option value={AnnouncementType.LECTURE}>Palestra</option>
+                            <option value={AnnouncementType.OTHER}>Outros</option>
+                        </select>
+                        <input
+                            type="time"
+                            className="w-32 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={newEventTime}
+                            onChange={e => setNewEventTime(e.target.value)}
+                        />
+                      </div>
                       <textarea
                         placeholder="Detalhes (Horário, Preletor, etc)"
                         className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px] uppercase"
