@@ -54,39 +54,39 @@ export const generateMembershipCard = async (member: Member) => {
     // =====================================================================
     
     // NOME
-    doc.setFontSize(9);
-    doc.text(member.name.toUpperCase(), 4, 26); 
+    doc.setFontSize(8); // Reduzido de 9
+    doc.text(member.name.toUpperCase(), 6, 27); // X: 4->6, Y: 26->27
 
     // FUNÇÃO
-    doc.setFontSize(9);
-    doc.text(member.role.toUpperCase(), 4, 33); 
+    doc.setFontSize(8); // Reduzido de 9
+    doc.text(member.role.toUpperCase(), 6, 34); // X: 4->6, Y: 33->34
 
     // MINISTÉRIO / DEP. (Esquerda)
-    doc.setFontSize(8);
-    doc.text((member.ministry || "").toUpperCase(), 4, 40);
+    doc.setFontSize(7); // Reduzido de 8
+    doc.text((member.ministry || "").toUpperCase(), 6, 41); // X: 4->6, Y: 40->41
 
     // CÓDIGO / REGISTRO (Direita)
     const code = member.code || member.id.substring(0, 8).toUpperCase();
-    doc.setFontSize(8);
-    doc.text(code, 35, 40); 
+    doc.setFontSize(7); // Reduzido de 8
+    doc.text(code, 38, 41); // X: 35->38, Y: 40->41
 
     // CONGREGAÇÃO (Esquerda)
-    doc.setFontSize(8);
-    doc.text((member.congregation || "SEDE").toUpperCase(), 4, 47);
+    doc.setFontSize(7); // Reduzido de 8
+    doc.text((member.congregation || "SEDE").toUpperCase(), 6, 48); // X: 4->6, Y: 47->48
 
     // DATA DE VALIDADE (Direita)
     const validade = new Date();
     validade.setFullYear(validade.getFullYear() + 1);
     const validadeStr = validade.toLocaleDateString('pt-BR');
-    doc.setFontSize(8);
-    doc.text(validadeStr, 35, 47);
+    doc.setFontSize(7); // Reduzido de 8
+    doc.text(validadeStr, 38, 48); // X: 35->38, Y: 47->48
 
     // FOTO DO MEMBRO
-    // Ajuste as coordenadas e tamanho para encaixar no quadrado branco da direita
-    const photoX = 63; 
-    const photoY = 22; 
-    const photoW = 20; 
-    const photoH = 26; 
+    // Ajuste para preencher o espaço branco (mais para esquerda e baixo)
+    const photoX = 60; // 63 -> 60
+    const photoY = 23; // 22 -> 23
+    const photoW = 22; // 20 -> 22 (Aumentar um pouco para preencher)
+    const photoH = 28; // 26 -> 28
 
     if (member.photoUrl && !member.photoUrl.includes('ui-avatars')) {
       try {
@@ -102,29 +102,32 @@ export const generateMembershipCard = async (member: Member) => {
     // =====================================================================
     const offsetX = 85.6;
 
+    // Ajuste Geral Verso: Mais para direita (+2mm) e mais para cima (-5mm)
+    const versoX = offsetX + 6; // Era +4
+
     // PAI
-    doc.setFontSize(8);
-    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), offsetX + 4, 19); 
+    doc.setFontSize(7); // Ajustado para 7 para caber melhor
+    doc.text((member.fatherName || "").toUpperCase().substring(0, 40), versoX, 14); // Y: 19 -> 14
 
     // MÃE
-    doc.setFontSize(8);
-    doc.text((member.motherName || "").toUpperCase().substring(0, 40), offsetX + 4, 26); 
+    doc.setFontSize(7);
+    doc.text((member.motherName || "").toUpperCase().substring(0, 40), versoX, 21); // Y: 26 -> 21
 
     // NACIONALIDADE (Esquerda)
-    doc.setFontSize(8);
-    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), offsetX + 4, 33);
+    doc.setFontSize(7);
+    doc.text((member.nationality || "BRASILEIRA").toUpperCase(), versoX, 28); // Y: 33 -> 28
 
     // NATURALIDADE (Direita)
     const nat = member.naturalness ? `${member.naturalness} - ${member.naturalnessState || ''}` : "";
-    doc.text(nat.toUpperCase().substring(0, 25), offsetX + 45, 33);
+    doc.text(nat.toUpperCase().substring(0, 25), versoX + 42, 28); // Y: 33 -> 28, X ajustado
 
     // CPF (Esquerda)
-    doc.setFontSize(8);
-    doc.text((member.cpf || ""), offsetX + 4, 40);
+    doc.setFontSize(7);
+    doc.text((member.cpf || ""), versoX, 35); // Y: 40 -> 35
 
     // RG (Direita)
-    doc.setFontSize(8);
-    doc.text((member.rg || ""), offsetX + 45, 40);
+    doc.setFontSize(7);
+    doc.text((member.rg || ""), versoX + 42, 35); // Y: 40 -> 35
 
     // Salva o PDF
     doc.save(`carteirinha_${member.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
