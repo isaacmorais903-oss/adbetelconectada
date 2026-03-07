@@ -184,11 +184,11 @@ export const Inventory: React.FC<InventoryProps> = ({ initialItems, items: setIt
       </div>
 
       {/* Main Table Area */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
         
         {/* Filter Bar */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="relative flex-1">
+          <div className="relative flex-1 max-w-md">
             <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             <input 
               type="text" 

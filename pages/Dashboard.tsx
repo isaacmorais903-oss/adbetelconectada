@@ -262,36 +262,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                    <PlusCircle className="w-7 h-7 text-blue-700 dark:text-blue-400" />
+                    <PlusCircle className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Novo Membro</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Novo Membro</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('finance')}
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                    <FileText className="w-7 h-7 text-blue-700 dark:text-blue-400" />
+                    <FileText className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Relatórios</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Relatórios</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('announcements')}
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                    <Send className="w-7 h-7 text-blue-700 dark:text-blue-400" />
+                    <Send className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Novo Aviso</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Novo Aviso</span>
             </button>
             <button 
                 onClick={() => onChangeView?.('finance')}
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                    <DollarSign className="w-7 h-7 text-blue-700 dark:text-blue-400" />
+                    <DollarSign className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Lançar Oferta</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Lançar Oferta</span>
             </button>
 
             {/* PASTORAL CARE BUTTON */}
@@ -300,9 +300,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
-                    <HeartHandshake className="w-7 h-7 text-amber-700 dark:text-amber-400" />
+                    <HeartHandshake className="w-6 h-6 text-amber-700 dark:text-amber-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Pastoral</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Pastoral</span>
             </button>
 
             {/* Social Media Config Button */}
@@ -311,9 +311,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
-                    <Share2 className="w-7 h-7 text-purple-700 dark:text-purple-400" />
+                    <Share2 className="w-6 h-6 text-purple-700 dark:text-purple-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Redes Sociais</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Redes Sociais</span>
             </button>
             
             {/* BACKUP & EXPORT BUTTONS */}
@@ -324,9 +324,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 title="Baixar planilhas para Excel/Google Sheets"
             >
                 <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-                    <FileSpreadsheet className="w-7 h-7 text-green-700 dark:text-green-400" />
+                    <FileSpreadsheet className="w-6 h-6 text-green-700 dark:text-green-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Exportar Excel</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Exportar Excel</span>
             </button>
 
             <button 
@@ -335,9 +335,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 title="Backup completo do sistema (JSON)"
             >
                 <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50 transition-colors">
-                    <Save className="w-7 h-7 text-emerald-700 dark:text-emerald-400" />
+                    <Save className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Backup JSON</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Backup JSON</span>
             </button>
             
             <button 
@@ -345,9 +345,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                 className="flex flex-col items-center justify-center gap-2 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group"
             >
                 <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
-                    <Upload className="w-7 h-7 text-orange-700 dark:text-orange-400" />
+                    <Upload className="w-6 h-6 text-orange-700 dark:text-orange-400" />
                 </div>
-                <span className="font-medium text-base text-slate-700 dark:text-slate-200 text-center">Restaurar</span>
+                <span className="font-medium text-sm text-slate-700 dark:text-slate-200 text-center">Restaurar</span>
                 <input 
                     type="file" 
                     ref={fileInputRef}
@@ -465,13 +465,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         <div className="bg-gradient-to-br from-blue-900 to-slate-900 dark:from-black dark:to-blue-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10 flex justify-between items-center">
                 <div>
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-sm font-bold mb-2 backdrop-blur-sm border border-white/20 uppercase">
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-xs font-bold mb-2 backdrop-blur-sm border border-white/20 uppercase">
                         {nextService ? `PRÓXIMO ${nextService.type}` : 'PRÓXIMO CULTO'}
                     </span>
-                    <h2 className="text-3xl font-bold mb-1">
+                    <h2 className="text-2xl font-bold mb-1">
                         {nextService ? nextService.title : 'Nenhum evento agendado'}
                     </h2>
-                    <div className="flex items-center gap-2 text-blue-200 text-base">
+                    <div className="flex items-center gap-2 text-blue-200 text-sm">
                         <Clock className="w-4 h-4" />
                         <span>
                             {nextService 
@@ -498,7 +498,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         {/* Action Grid (The App Look) */}
         <div>
             <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg uppercase tracking-wide opacity-80">Acesso Rápido</h3>
+                <h3 className="font-bold text-slate-800 dark:text-white text-base uppercase tracking-wide opacity-80">Acesso Rápido</h3>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {menuItems.map((item, index) => {
@@ -507,12 +507,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                         <button 
                             key={index}
                             onClick={item.action}
-                            className="flex flex-col items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
+                            className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
                         >
-                            <div className={`p-3 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
-                                <Icon className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={2} />
+                            <div className={`p-3.5 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+                                <Icon className="w-7 h-7" strokeWidth={2} />
                             </div>
-                            <span className="text-sm sm:text-base font-bold text-slate-700 dark:text-slate-200 text-center leading-tight line-clamp-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight line-clamp-2">
                                 {item.label}
                             </span>
                         </button>
@@ -525,8 +525,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
         {upcomingEvents.length > 0 && (
             <div>
                 <div className="flex items-center justify-between mb-4 px-1">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-xl">Próximos Eventos</h3>
-                    <button onClick={() => onChangeView?.('announcements')} className="text-base text-blue-600 dark:text-blue-400 font-medium hover:underline">Ver todos</button>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Próximos Eventos</h3>
+                    <button onClick={() => onChangeView?.('announcements')} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">Ver todos</button>
                 </div>
                 <div className="space-y-3">
                     {upcomingEvents.slice(0, 3).map((event) => (
@@ -536,12 +536,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                                 event.type === AnnouncementType.EVENT ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' :
                                 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                             }`}>
-                                <Calendar className="w-6 h-6" />
+                                <Calendar className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-lg text-slate-800 dark:text-white truncate">{event.title}</h4>
-                                <p className="text-base text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                    <Clock className="w-4 h-4" />
+                                <h4 className="font-bold text-slate-800 dark:text-white truncate">{event.title}</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
                                     {new Date(event.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -553,30 +553,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
 
         {/* Highlights / News Feed */}
         <div className="space-y-4">
-            <h3 className="font-bold text-slate-800 dark:text-white text-xl px-1">Destaques</h3>
+            <h3 className="font-bold text-slate-800 dark:text-white text-lg px-1">Destaques</h3>
             
             {/* Daily Word Card */}
             <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
                 <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-xl text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                    <BookOpen className="w-7 h-7" />
+                    <BookOpen className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-lg text-slate-800 dark:text-white">Palavra do Dia</h4>
-                    <p className="text-base text-slate-500 dark:text-slate-400 line-clamp-1">"O Senhor é o meu pastor e nada me faltará..."</p>
+                    <h4 className="font-bold text-slate-800 dark:text-white">Palavra do Dia</h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">"O Senhor é o meu pastor e nada me faltará..."</p>
                 </div>
-                <ChevronRight className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
             </div>
 
             {/* Campaign Card */}
             <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
                  <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-xl text-orange-600 dark:text-orange-400 flex-shrink-0">
-                    <Heart className="w-7 h-7" />
+                    <Heart className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-bold text-lg text-slate-800 dark:text-white">Campanha do Quilo</h4>
-                    <p className="text-base text-slate-500 dark:text-slate-400 line-clamp-1">Ajude as famílias carentes da comunidade.</p>
+                    <h4 className="font-bold text-slate-800 dark:text-white">Campanha do Quilo</h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">Ajude as famílias carentes da comunidade.</p>
                 </div>
-                <ChevronRight className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
             </div>
         </div>
 

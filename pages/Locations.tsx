@@ -46,25 +46,8 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
             if (error) {
                 console.error("Erro ao carregar locais:", error);
             } else if (data) {
-                // Ordenação: Sede primeiro, depois por número
-                const sorted = (data as Location[]).sort((a, b) => {
-                    // 1. Sede sempre no topo
-                    const isSedeA = a.type === 'Sede' || a.name.toLowerCase().includes('sede');
-                    const isSedeB = b.type === 'Sede' || b.name.toLowerCase().includes('sede');
-                    
-                    if (isSedeA && !isSedeB) return -1;
-                    if (!isSedeA && isSedeB) return 1;
-                    
-                    // 2. Ordena por número extraído do nome (ex: "002 - Congregação")
-                    const numA = parseInt(a.name.split(' - ')[0]) || 9999;
-                    const numB = parseInt(b.name.split(' - ')[0]) || 9999;
-                    
-                    if (numA !== numB) return numA - numB;
-                    
-                    // 3. Ordem alfabética como desempate
-                    return a.name.localeCompare(b.name);
-                });
-                setLocations(sorted);
+                // Se conectou com sucesso, usa os dados do banco (mesmo que vazio, removendo o mock)
+                setLocations(data);
             }
         });
     }
