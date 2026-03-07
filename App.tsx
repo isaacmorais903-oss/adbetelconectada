@@ -297,35 +297,35 @@ const App: React.FC = () => {
 
       <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0 relative">
         {/* Mobile Header */}
-        <header className="md:hidden bg-slate-900 dark:bg-black text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg relative z-10">
-           <div className="flex justify-between items-center mb-6">
+        <header className="md:hidden bg-slate-900 dark:bg-black text-white p-4 pb-8 rounded-b-[2rem] shadow-lg relative z-10">
+           <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-3">
-                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center border border-white/30">
-                    <span className="font-bold text-lg">{userRole === 'admin' ? 'AD' : 'MB'}</span>
+                 <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center border border-white/30">
+                    <span className="font-bold text-sm">{userRole === 'admin' ? 'AD' : 'MB'}</span>
                  </div>
                  <div className="overflow-hidden">
-                    <h1 className="font-bold text-lg leading-tight truncate max-w-[150px]">{currentUserName}</h1>
-                    <p className="text-xs text-slate-300">{userRole === 'admin' ? 'Painel Administrativo' : 'Área do Membro'}</p>
+                    <h1 className="font-bold text-base leading-tight truncate max-w-[150px]">{currentUserName}</h1>
+                    <p className="text-[10px] text-slate-300">{userRole === 'admin' ? 'Painel Administrativo' : 'Área do Membro'}</p>
                  </div>
               </div>
               <div className="flex gap-2">
-                 <button onClick={togglePrivacy} className={`p-2 rounded-full ${privacyMode ? 'bg-emerald-500' : 'bg-white/10'}`}>
-                    {privacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                 <button onClick={togglePrivacy} className={`p-1.5 rounded-full ${privacyMode ? 'bg-emerald-500' : 'bg-white/10'}`}>
+                    {privacyMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                  </button>
-                 <button onClick={toggleTheme} className="p-2 bg-white/10 rounded-full">
-                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                 <button onClick={toggleTheme} className="p-1.5 bg-white/10 rounded-full">
+                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                  </button>
                  {/* Botão de Configurações Mobile */}
-                 <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/10 rounded-full text-white">
-                    <Settings className="w-5 h-5" />
+                 <button onClick={() => setShowPasswordModal(true)} className="p-1.5 bg-white/10 rounded-full text-white">
+                    <Settings className="w-4 h-4" />
                  </button>
-                 <button onClick={handleLogout} className="p-2 bg-white/10 rounded-full"><LogOut className="w-5 h-5" /></button>
+                 <button onClick={handleLogout} className="p-1.5 bg-white/10 rounded-full"><LogOut className="w-4 h-4" /></button>
               </div>
            </div>
            {currentView !== 'dashboard' && (
               <div className="flex items-center justify-between mt-2">
-                <h2 className="text-2xl font-bold">{getPageTitle()}</h2>
-                <button onClick={() => setCurrentView('dashboard')} className="bg-white/10 p-2 rounded-lg"><Home className="w-5 h-5" /></button>
+                <h2 className="text-xl font-bold">{getPageTitle()}</h2>
+                <button onClick={() => setCurrentView('dashboard')} className="bg-white/10 p-1.5 rounded-lg"><Home className="w-4 h-4" /></button>
               </div>
            )}
         </header>

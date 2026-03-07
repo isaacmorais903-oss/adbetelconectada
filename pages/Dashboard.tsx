@@ -79,15 +79,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
       }
 
       try {
-          const today = new Date();
-          // Manter start of day para garantir que eventos de hoje apareçam, mesmo se "agora" for um pouco depois do horário de início
-          // Mas idealmente, "Próximo" deveria ser futuro. Vamos manter start of day por enquanto para garantir visibilidade do dia.
-          today.setHours(0, 0, 0, 0); 
-
+          const now = new Date();
+          // Ajuste para garantir que eventos que já passaram hoje não apareçam como "Próximo"
+          // Mas mantemos uma margem de tolerância (ex: eventos de hoje ainda aparecem se não tiverem acabado há muito tempo)
+          // Para simplificar e atender a queixa do usuário: filtra eventos a partir de AGORA.
+          
           const { data, error } = await supabase
               .from('announcements')
               .select('*')
-              .gte('date', today.toISOString())
+              .gte('date', now.toISOString())
               .in('type', [AnnouncementType.EVENT, AnnouncementType.CULT, AnnouncementType.LECTURE, AnnouncementType.OTHER])
               .order('date', { ascending: true })
               .limit(5);
@@ -98,6 +98,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
               // Define o destaque como o PRIMEIRO evento da lista (o mais próximo), independente do tipo
               if (data.length > 0) {
                   setNextService(data[0]);
+              } else {
+                  setNextService(null);
               }
           }
       } catch (error) {
@@ -494,22 +496,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
 
         {/* Action Grid (The App Look) */}
         <div>
-            <div className="flex items-center justify-between mb-4 px-1">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Acesso Rápido</h3>
+            <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="font-bold text-slate-800 dark:text-white text-base uppercase tracking-wide opacity-80">Acesso Rápido</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {menuItems.map((item, index) => {
                     const Icon = item.icon;
                     return (
                         <button 
                             key={index}
                             onClick={item.action}
-                            className="flex flex-col items-center gap-3 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
+                            className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
                         >
-                            <div className={`p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
-                                <Icon className="w-8 h-8" strokeWidth={2} />
+                            <div className={`p-3 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+                                <Icon className="w-6 h-6" strokeWidth={2} />
                             </div>
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 text-center leading-tight line-clamp-2">
                                 {item.label}
                             </span>
                         </button>
