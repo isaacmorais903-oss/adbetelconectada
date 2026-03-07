@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon, Edit2 } from 'lucide-react';
 import { Location } from '../types';
 import { supabase, isConfigured } from '../services/supabase';
@@ -17,6 +17,32 @@ const INITIAL_LOCATIONS: Location[] = [
     imageUrl: 'https://images.unsplash.com/photo-1548625361-ec8fdea2f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' // Exemplo
   }
 ];
+
+const sortLocations = (locations: Location[]): Location[] => {
+  return [...locations].sort((a, b) => {
+    // 1. Sede sempre primeiro
+    if (a.type === 'Sede' && b.type !== 'Sede') return -1;
+    if (a.type !== 'Sede' && b.type === 'Sede') return 1;
+
+    // 2. Congregações em segundo (prioridade sobre outros tipos)
+    if (a.type === 'Congregação' && b.type !== 'Congregação') return -1;
+    if (a.type !== 'Congregação' && b.type === 'Congregação') return 1;
+
+    // 3. Extrair números do nome para ordenação
+    const getNumber = (str: string) => {
+      const match = str.match(/(\d+)/);
+      return match ? parseInt(match[0], 10) : 999999;
+    };
+
+    const numA = getNumber(a.name);
+    const numB = getNumber(b.name);
+
+    if (numA !== numB) return numA - numB;
+    
+    // 4. Desempate alfabético
+    return a.name.localeCompare(b.name);
+  });
+};
 
 import { UserRole } from '../types';
 
@@ -47,43 +73,11 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                 console.error("Erro ao carregar locais:", error);
             } else if (data) {
                 // Se conectou com sucesso, usa os dados do banco (mesmo que vazio, removendo o mock)
-                setLocations(data);
+                setLocations(sortLocations(data));
             }
         });
     }
   }, []);
-
-  const sortedLocations = useMemo(() => {
-    return [...locations].sort((a, b) => {
-      // 1. Sede sempre primeiro
-      const isSedeA = a.type === 'Sede';
-      const isSedeB = b.type === 'Sede';
-      
-      if (isSedeA && !isSedeB) return -1;
-      if (!isSedeA && isSedeB) return 1;
-
-      // 2. Extrair número do nome para ordenação numérica
-      const getNumber = (str: string) => {
-        const match = str.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : null;
-      };
-
-      const numA = getNumber(a.name);
-      const numB = getNumber(b.name);
-
-      // Se ambos têm número, ordena pelo número
-      if (numA !== null && numB !== null) {
-        return numA - numB;
-      }
-
-      // Se apenas um tem número, ele vem primeiro (ou ajuste conforme preferência)
-      if (numA !== null && numB === null) return -1;
-      if (numA === null && numB !== null) return 1;
-
-      // 3. Fallback para ordem alfabética
-      return a.name.localeCompare(b.name);
-    });
-  }, [locations]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,7 +128,7 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                    const { error } = await supabase.from('locations').update(payload).eq('id', newLocation.id);
                    if(error) throw error;
                    
-                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
+                   setLocations(sortLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l)));
                } else {
                    // INSERT
                    const insertPayload = { ...payload };
@@ -142,16 +136,16 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                    
                    const { data, error } = await supabase.from('locations').insert(insertPayload).select();
                    if(error) throw error;
-                   if(data) setLocations([...locations, data[0] as Location]);
+                   if(data) setLocations(sortLocations([...locations, data[0] as Location]));
                }
                alert('Local salvo com sucesso!');
           } else {
                // OFFLINE MODE
                if (isEditing && newLocation.id) {
-                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
+                   setLocations(sortLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l)));
                } else {
                    const loc = { ...payload, id: Math.random().toString() } as Location;
-                   setLocations([...locations, loc]);
+                   setLocations(sortLocations([...locations, loc]));
                }
                alert('Local salvo (Modo Offline/Demo)!');
           }
@@ -193,7 +187,7 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedLocations.map((loc) => (
+        {locations.map((loc) => (
           <div key={loc.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-all group relative flex flex-col h-full">
             
             {userRole === 'admin' && (
