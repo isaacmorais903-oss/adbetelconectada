@@ -70,14 +70,35 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSessionSuccess = (session: any) => {
+  const handleSessionSuccess = async (session: any) => {
       setSession(session);
       setIsAuthenticated(true);
       
       // Determine Role based on Email
       const email = session.user?.email || '';
-      // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
-      const isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+      
+      // HARDCODED ADMINS (Safety Net)
+      const hardcodedAdmins = ['isaacmorais903@gmail.com'];
+      
+      // Aceita: admin, adm, pastor, lider, secretaria, tesouraria, diacono, presbitero, cooperador
+      let isAdmin = hardcodedAdmins.includes(email) || /admin|adm|pastor|lider|líder|secretaria|tesouraria|diacono|diácono|presbitero|presbítero|cooperador/i.test(email);
+      
+      // Se não passou no regex, verifica no banco de dados se tem cargo de liderança
+      if (!isAdmin && isConfigured) {
+          try {
+              const { data } = await supabase.from('members').select('role').eq('email', email).single();
+              if (data && data.role) {
+                  const roleLower = data.role.toLowerCase();
+                  // Verifica palavras-chave no cargo do banco
+                  if (roleLower.match(/lider|líder|pastor|tesour|secretar|admin|diacono|diácono|presbitero|presbítero|cooperador|dirigente/i)) {
+                      isAdmin = true;
+                  }
+              }
+          } catch (err) {
+              console.error("Erro ao verificar role no banco:", err);
+          }
+      }
+
       const role = isAdmin ? 'admin' : 'member';
       
       setUserRole(role);
@@ -298,7 +319,7 @@ const App: React.FC = () => {
         userName={currentUserName} userEmail={currentUserEmail}
       />
 
-      <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0 relative">
+      <main className="flex-1 md:ml-72 transition-all duration-300 flex flex-col min-h-screen pb-20 md:pb-0 relative overflow-x-hidden">
         {/* Mobile Header */}
         <header className="md:hidden bg-slate-900 dark:bg-black text-white p-4 pb-8 rounded-b-[2rem] shadow-lg relative z-10">
            <div className="flex justify-between items-center mb-4">
@@ -366,7 +387,7 @@ const App: React.FC = () => {
            </div>
         )}
 
-        <div className={`flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
+        <div className={`flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 overflow-x-hidden ${currentView === 'dashboard' ? '-mt-8 md:mt-0' : ''} z-20`}>
           {renderView()}
         </div>
 

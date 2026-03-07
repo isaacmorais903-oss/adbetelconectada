@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Navigation, Clock, Plus, Trash2, Building2, Camera, Upload, Link as LinkIcon, Edit2 } from 'lucide-react';
 import { Location } from '../types';
 import { supabase, isConfigured } from '../services/supabase';
@@ -52,6 +52,38 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
         });
     }
   }, []);
+
+  const sortedLocations = useMemo(() => {
+    return [...locations].sort((a, b) => {
+      // 1. Sede sempre primeiro
+      const isSedeA = a.type === 'Sede';
+      const isSedeB = b.type === 'Sede';
+      
+      if (isSedeA && !isSedeB) return -1;
+      if (!isSedeA && isSedeB) return 1;
+
+      // 2. Extrair número do nome para ordenação numérica
+      const getNumber = (str: string) => {
+        const match = str.match(/(\d+)/);
+        return match ? parseInt(match[0], 10) : null;
+      };
+
+      const numA = getNumber(a.name);
+      const numB = getNumber(b.name);
+
+      // Se ambos têm número, ordena pelo número
+      if (numA !== null && numB !== null) {
+        return numA - numB;
+      }
+
+      // Se apenas um tem número, ele vem primeiro (ou ajuste conforme preferência)
+      if (numA !== null && numB === null) return -1;
+      if (numA === null && numB !== null) return 1;
+
+      // 3. Fallback para ordem alfabética
+      return a.name.localeCompare(b.name);
+    });
+  }, [locations]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,7 +193,7 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {locations.map((loc) => (
+        {sortedLocations.map((loc) => (
           <div key={loc.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-all group relative flex flex-col h-full">
             
             {userRole === 'admin' && (
