@@ -18,32 +18,6 @@ const INITIAL_LOCATIONS: Location[] = [
   }
 ];
 
-const sortLocations = (locations: Location[]): Location[] => {
-  return [...locations].sort((a, b) => {
-    // 1. Sede sempre primeiro
-    if (a.type === 'Sede' && b.type !== 'Sede') return -1;
-    if (a.type !== 'Sede' && b.type === 'Sede') return 1;
-
-    // 2. Congregações em segundo (prioridade sobre outros tipos)
-    if (a.type === 'Congregação' && b.type !== 'Congregação') return -1;
-    if (a.type !== 'Congregação' && b.type === 'Congregação') return 1;
-
-    // 3. Extrair números do nome para ordenação
-    const getNumber = (str: string) => {
-      const match = str.match(/(\d+)/);
-      return match ? parseInt(match[0], 10) : 999999;
-    };
-
-    const numA = getNumber(a.name);
-    const numB = getNumber(b.name);
-
-    if (numA !== numB) return numA - numB;
-    
-    // 4. Desempate alfabético
-    return a.name.localeCompare(b.name);
-  });
-};
-
 import { UserRole } from '../types';
 
 interface LocationsProps {
@@ -73,7 +47,7 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                 console.error("Erro ao carregar locais:", error);
             } else if (data) {
                 // Se conectou com sucesso, usa os dados do banco (mesmo que vazio, removendo o mock)
-                setLocations(sortLocations(data));
+                setLocations(data);
             }
         });
     }
@@ -128,7 +102,7 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                    const { error } = await supabase.from('locations').update(payload).eq('id', newLocation.id);
                    if(error) throw error;
                    
-                   setLocations(sortLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l)));
+                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
                } else {
                    // INSERT
                    const insertPayload = { ...payload };
@@ -136,16 +110,16 @@ export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
                    
                    const { data, error } = await supabase.from('locations').insert(insertPayload).select();
                    if(error) throw error;
-                   if(data) setLocations(sortLocations([...locations, data[0] as Location]));
+                   if(data) setLocations([...locations, data[0] as Location]);
                }
                alert('Local salvo com sucesso!');
           } else {
                // OFFLINE MODE
                if (isEditing && newLocation.id) {
-                   setLocations(sortLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l)));
+                   setLocations(locations.map(l => l.id === newLocation.id ? { ...l, ...payload } as Location : l));
                } else {
                    const loc = { ...payload, id: Math.random().toString() } as Location;
-                   setLocations(sortLocations([...locations, loc]));
+                   setLocations([...locations, loc]);
                }
                alert('Local salvo (Modo Offline/Demo)!');
           }

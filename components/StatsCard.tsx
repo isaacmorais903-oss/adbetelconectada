@@ -14,11 +14,11 @@ export const StatsCard: React.FC<StatsCardProps> = ({ label, value, trend, trend
   return (
     <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
       <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0 pr-4">
-          <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 break-words leading-tight">{value}</h3>
+        <div>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</h3>
         </div>
-        <div className={`p-2 sm:p-3 rounded-lg ${color} bg-opacity-10 flex-shrink-0`}>
+        <div className={`p-2 sm:p-3 rounded-lg ${color} bg-opacity-10`}>
           <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color.replace('bg-', 'text-')}`} />
         </div>
       </div>
