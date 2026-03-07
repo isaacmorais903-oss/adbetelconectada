@@ -70,14 +70,30 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSessionSuccess = (session: any) => {
+  const handleSessionSuccess = async (session: any) => {
       setSession(session);
       setIsAuthenticated(true);
       
       // Determine Role based on Email
       const email = session.user?.email || '';
       // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
-      const isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+      let isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+      
+      // Se não passou no regex, verifica no banco de dados se tem cargo de liderança
+      if (!isAdmin && isConfigured) {
+          try {
+              const { data } = await supabase.from('members').select('role').eq('email', email).single();
+              if (data && data.role) {
+                  const roleLower = data.role.toLowerCase();
+                  if (roleLower.includes('lider') || roleLower.includes('líder') || roleLower.includes('pastor') || roleLower.includes('tesour') || roleLower.includes('secretar') || roleLower.includes('admin')) {
+                      isAdmin = true;
+                  }
+              }
+          } catch (err) {
+              console.error("Erro ao verificar role no banco:", err);
+          }
+      }
+
       const role = isAdmin ? 'admin' : 'member';
       
       setUserRole(role);
