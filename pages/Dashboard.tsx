@@ -80,7 +80,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
 
       try {
           const today = new Date();
-          today.setHours(0, 0, 0, 0); // Começo do dia
+          // Manter start of day para garantir que eventos de hoje apareçam, mesmo se "agora" for um pouco depois do horário de início
+          // Mas idealmente, "Próximo" deveria ser futuro. Vamos manter start of day por enquanto para garantir visibilidade do dia.
+          today.setHours(0, 0, 0, 0); 
 
           const { data, error } = await supabase
               .from('announcements')
@@ -93,10 +95,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
           if (data) {
               setUpcomingEvents(data);
               
-              // Encontrar o próximo culto
-              const nextCult = data.find(e => e.type === AnnouncementType.CULT);
-              if (nextCult) {
-                  setNextService(nextCult);
+              // Define o destaque como o PRIMEIRO evento da lista (o mais próximo), independente do tipo
+              if (data.length > 0) {
+                  setNextService(data[0]);
               }
           }
       } catch (error) {
@@ -457,22 +458,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
   return (
     <div className="space-y-6">
         
-        {/* Featured Card (Next Service) */}
+        {/* Featured Card (Next Service/Event) */}
         <div className="bg-gradient-to-br from-blue-900 to-slate-900 dark:from-black dark:to-blue-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10 flex justify-between items-center">
                 <div>
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-xs font-bold mb-2 backdrop-blur-sm border border-white/20">
-                        PRÓXIMO CULTO
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-xs font-bold mb-2 backdrop-blur-sm border border-white/20 uppercase">
+                        {nextService ? `PRÓXIMO ${nextService.type}` : 'PRÓXIMO CULTO'}
                     </span>
                     <h2 className="text-2xl font-bold mb-1">
-                        {nextService ? nextService.title : 'Culto da Família'}
+                        {nextService ? nextService.title : 'Nenhum evento agendado'}
                     </h2>
                     <div className="flex items-center gap-2 text-blue-200 text-sm">
                         <Clock className="w-4 h-4" />
                         <span>
                             {nextService 
                                 ? new Date(nextService.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
-                                : 'Domingo, 18:00h'
+                                : 'Aguardando agendamento'
                             }
                         </span>
                     </div>
@@ -496,19 +497,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
             <div className="flex items-center justify-between mb-4 px-1">
                 <h3 className="font-bold text-slate-800 dark:text-white text-lg">Acesso Rápido</h3>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {menuItems.map((item, index) => {
                     const Icon = item.icon;
                     return (
                         <button 
                             key={index}
                             onClick={item.action}
-                            className="flex flex-col items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
+                            className="flex flex-col items-center gap-3 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
                         >
-                            <div className={`p-3.5 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
-                                <Icon className="w-6 h-6" strokeWidth={2.5} />
+                            <div className={`p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+                                <Icon className="w-8 h-8" strokeWidth={2} />
                             </div>
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 text-center leading-tight">
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight">
                                 {item.label}
                             </span>
                         </button>

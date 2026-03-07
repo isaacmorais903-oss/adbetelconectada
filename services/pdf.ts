@@ -356,20 +356,27 @@ export const generateMemberFile = async (member: Member) => {
     // 1. CABEÇALHO (LOGO)
     try {
       const logoImg = await loadImage('/logo_adbetel.png');
-      // Aumentado e alinhado à esquerda
-      const logoW = 70; 
-      const logoH = 23; 
-      doc.addImage(logoImg, 'PNG', 14, 14, logoW, logoH);
+      // Aumentado e alinhado à esquerda (2x o tamanho anterior)
+      const logoW = 140; 
+      const logoH = 46; 
+      doc.addImage(logoImg, 'PNG', 14, 10, logoW, logoH);
     } catch (e) {
       // Ignora erro
     }
 
     // TÍTULO
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22); // Aumentado
+    doc.setFontSize(16); // Diminuído (era 22)
     doc.setTextColor(30, 58, 138); // Blue 900
     // Alinhado à esquerda, abaixo do logo
-    doc.text("FICHA CADASTRAL DE MEMBRO", 14, 45, { align: "left" });
+    doc.text("FICHA CADASTRAL DE MEMBRO", 14, 65, { align: "left" });
+
+    // DATA DE EMISSÃO (Movido para o topo)
+    const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Emitido em: ${dateStr}`, 14, 72, { align: "left" });
     
     // FOTO DO MEMBRO
     // Mantém no canto superior direito
@@ -378,7 +385,7 @@ export const generateMemberFile = async (member: Member) => {
             const photoW = 30;
             const photoH = 40;
             const photoX = width - 45; 
-            const photoY = 14; // Alinhado com o topo do logo
+            const photoY = 14; 
             
             const profilePic = await loadImage(member.photoUrl);
             doc.addImage(profilePic, 'JPEG', photoX, photoY, photoW, photoH);
@@ -389,10 +396,8 @@ export const generateMemberFile = async (member: Member) => {
         }
     }
 
-    // Ajuste de Y para começar os dados (evitar sobreposição com foto)
-    // Foto vai de 14 até 54. Título vai até ~45. 
-    // Vamos dar um bom espaço.
-    currentY = 70;
+    // Ajuste de Y para começar os dados (evitar sobreposição com foto e cabeçalho maior)
+    currentY = 85;
 
     // DADOS PESSOAIS
     doc.setFillColor(241, 245, 249); // Slate 100
@@ -575,18 +580,15 @@ export const generateMemberFile = async (member: Member) => {
     doc.text((member.previousChurch || "---").toUpperCase(), 16, currentY + 5);
 
     // RODAPÉ COM ASSINATURAS
-    // Aumentado para 270 para dar mais espaço e evitar sobreposição
-    currentY = 270;
+    // Aumentado para 280 para dar mais espaço e evitar sobreposição
+    currentY = 280;
     
-    const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.setFontSize(10);
-    doc.text(`Emitido em: ${dateStr}`, width / 2, currentY - 15, { align: "center" });
-
     doc.setLineWidth(0.5);
     doc.line(20, currentY, 90, currentY);
     doc.line(120, currentY, 190, currentY);
 
     doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
     doc.text("Assinatura do Membro", 55, currentY + 5, { align: "center" });
     doc.text("Secretaria da Igreja", 155, currentY + 5, { align: "center" });
 
