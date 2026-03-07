@@ -76,8 +76,12 @@ const App: React.FC = () => {
       
       // Determine Role based on Email
       const email = session.user?.email || '';
-      // Aceita: admin, adm, pastor, lider, secretaria, tesouraria
-      let isAdmin = /admin|adm|pastor|lider|secretaria|tesouraria/i.test(email);
+      
+      // HARDCODED ADMINS (Safety Net)
+      const hardcodedAdmins = ['isaacmorais903@gmail.com'];
+      
+      // Aceita: admin, adm, pastor, lider, secretaria, tesouraria, diacono, presbitero, cooperador
+      let isAdmin = hardcodedAdmins.includes(email) || /admin|adm|pastor|lider|líder|secretaria|tesouraria|diacono|diácono|presbitero|presbítero|cooperador/i.test(email);
       
       // Se não passou no regex, verifica no banco de dados se tem cargo de liderança
       if (!isAdmin && isConfigured) {
@@ -85,7 +89,8 @@ const App: React.FC = () => {
               const { data } = await supabase.from('members').select('role').eq('email', email).single();
               if (data && data.role) {
                   const roleLower = data.role.toLowerCase();
-                  if (roleLower.includes('lider') || roleLower.includes('líder') || roleLower.includes('pastor') || roleLower.includes('tesour') || roleLower.includes('secretar') || roleLower.includes('admin')) {
+                  // Verifica palavras-chave no cargo do banco
+                  if (roleLower.match(/lider|líder|pastor|tesour|secretar|admin|diacono|diácono|presbitero|presbítero|cooperador|dirigente/i)) {
                       isAdmin = true;
                   }
               }
