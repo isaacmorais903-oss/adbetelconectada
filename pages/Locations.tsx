@@ -18,7 +18,13 @@ const INITIAL_LOCATIONS: Location[] = [
   }
 ];
 
-export const Locations: React.FC = () => {
+import { UserRole } from '../types';
+
+interface LocationsProps {
+  userRole?: UserRole;
+}
+
+export const Locations: React.FC<LocationsProps> = ({ userRole }) => {
   const [locations, setLocations] = useState<Location[]>(INITIAL_LOCATIONS);
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -144,26 +150,30 @@ export const Locations: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Endereços & Locais</h1>
           <p className="text-slate-500 dark:text-slate-400">Gerencie as congregações da igreja.</p>
         </div>
-        <button 
-            onClick={openAddModal}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
-        >
-            <Plus className="w-5 h-5" /> Adicionar Local
-        </button>
+        {userRole === 'admin' && (
+            <button 
+                onClick={openAddModal}
+                className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
+            >
+                <Plus className="w-5 h-5" /> Adicionar Local
+            </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {locations.map((loc) => (
           <div key={loc.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-all group relative flex flex-col h-full">
             
-            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                 <button onClick={() => openEditModal(loc)} className="bg-white/90 dark:bg-slate-700/90 text-blue-600 p-2 rounded-full shadow-md hover:bg-blue-50 backdrop-blur-sm transition-colors" title="Editar">
-                    <Edit2 className="w-4 h-4"/>
-                 </button>
-                 <button onClick={() => handleDelete(loc.id)} className="bg-white/90 dark:bg-slate-700/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 backdrop-blur-sm transition-colors" title="Excluir">
-                    <Trash2 className="w-4 h-4"/>
-                 </button>
-            </div>
+            {userRole === 'admin' && (
+                <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                     <button onClick={() => openEditModal(loc)} className="bg-white/90 dark:bg-slate-700/90 text-blue-600 p-2 rounded-full shadow-md hover:bg-blue-50 backdrop-blur-sm transition-colors" title="Editar">
+                        <Edit2 className="w-4 h-4"/>
+                     </button>
+                     <button onClick={() => handleDelete(loc.id)} className="bg-white/90 dark:bg-slate-700/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 backdrop-blur-sm transition-colors" title="Excluir">
+                        <Trash2 className="w-4 h-4"/>
+                     </button>
+                </div>
+            )}
 
             <div className="h-48 bg-slate-100 dark:bg-slate-700 relative overflow-hidden flex-shrink-0">
                 {loc.imageUrl ? (

@@ -455,6 +455,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
     { label: 'Endereços', icon: MapPin, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', action: () => onChangeView?.('locations') },
     { label: 'Bíblia', icon: BookOpen, color: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-100 dark:bg-slate-800', action: () => {} },
     { label: 'Escalas', icon: Music, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20', action: () => {} },
+    { label: 'Nossa História', icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', action: () => onChangeView?.('history') },
   ];
 
   return (
@@ -508,10 +509,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, onChangeView, on
                             onClick={item.action}
                             className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group aspect-square justify-center"
                         >
-                            <div className={`p-3 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
-                                <Icon className="w-6 h-6" strokeWidth={2} />
+                            <div className={`p-3.5 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+                                <Icon className="w-7 h-7" strokeWidth={2} />
                             </div>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 text-center leading-tight line-clamp-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight line-clamp-2">
                                 {item.label}
                             </span>
                         </button>

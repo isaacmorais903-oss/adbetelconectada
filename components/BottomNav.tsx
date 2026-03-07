@@ -11,7 +11,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onChangeView 
   const navItems = [
     { id: 'dashboard', label: 'Início', icon: Home },
     { id: 'calendar', label: 'Calendário', icon: Calendar },
-    { id: 'finance', label: 'Doar', icon: DollarSign },
+    { id: 'finance', label: 'Contribuir', icon: DollarSign },
     { id: 'members', label: 'Perfil', icon: User },
   ];
 
@@ -28,18 +28,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onChangeView 
               isActive ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
-            <Icon className={`w-6 h-6 ${isActive ? 'fill-current' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <Icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+            <span className="text-[11px] font-medium">{item.label}</span>
           </button>
         );
       })}
-      <button 
-        onClick={() => onChangeView('locations')} 
-        className="flex flex-col items-center gap-1 p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all duration-200"
-      >
-        <Menu className="w-6 h-6" />
-        <span className="text-[10px] font-medium">Menu</span>
-      </button>
     </div>
   );
 };

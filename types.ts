@@ -136,7 +136,7 @@ export interface InventoryItem {
   description?: string;
 }
 
-export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory' | 'discipleship' | 'pastoral' | 'calendar';
+export type View = 'dashboard' | 'members' | 'finance' | 'announcements' | 'locations' | 'prayers' | 'inventory' | 'discipleship' | 'pastoral' | 'calendar' | 'history';
 
 export interface ChurchSettings {
     id?: string;
