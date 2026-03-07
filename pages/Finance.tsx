@@ -511,13 +511,9 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
   };
 
   // ---------------- MEMBER VIEW (CONTRIBUIÇÃO) ----------------
-  // Se não for admin, mostra apenas a tela de contribuição
   if (userRole !== 'admin') {
       return (
           <div className="space-y-6">
-              {/* Debug Info (Only visible if something is wrong with role detection) */}
-              {/* <div className="text-xs text-slate-400">Role detected: {userRole}</div> */}
-              
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
                   <h2 className="text-2xl font-bold mb-2">Minha Contribuição</h2>
                   <p className="opacity-90 max-w-xl">
@@ -669,10 +665,10 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
       </div>
 
       {/* TABS DE NAVEGAÇÃO */}
-      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto pb-1 w-full max-w-full flex-nowrap scrollbar-hide">
           <button
               onClick={() => setActiveTab('transactions')}
-              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'transactions' 
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
@@ -682,7 +678,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
           </button>
           <button
               onClick={() => setActiveTab('payables')}
-              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'payables' 
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
@@ -692,7 +688,7 @@ export const Finance: React.FC<FinanceProps> = ({ userRole, privacyMode = false,
           </button>
           <button
               onClick={() => setActiveTab('ministries')}
-              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+              className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'ministries' 
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
